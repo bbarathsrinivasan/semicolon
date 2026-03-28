@@ -103,7 +103,7 @@ export default function ProjectPage() {
     : null;
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col h-screen overflow-hidden">
       {/* Top bar */}
       <header className="h-12 flex items-center px-4 border-b border-border gap-4 shrink-0">
         <button
@@ -140,9 +140,9 @@ export default function ProjectPage() {
       </header>
 
       {/* Main area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Diagram */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <ArchitectureDiagram
             architecture={project.architecture}
             nodeStatuses={nodeStatuses}
@@ -164,7 +164,7 @@ export default function ProjectPage() {
 
         {/* Build log panel */}
         {showBuildLog && (
-          <div className="w-96 overflow-hidden">
+          <div className="flex h-full min-h-0 w-96 shrink-0 flex-col overflow-hidden">
             <BuildLog events={events} complete={complete} />
           </div>
         )}

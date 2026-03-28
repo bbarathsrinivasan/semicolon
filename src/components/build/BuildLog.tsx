@@ -9,15 +9,17 @@ interface BuildLogProps {
 }
 
 export default function BuildLog({ events, complete }: BuildLogProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [events.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [events]);
 
   return (
-    <div className="h-full flex flex-col bg-background border-l border-border">
-      <div className="p-3 border-b border-border flex items-center justify-between">
+    <div className="h-full min-h-0 flex flex-col bg-background border-l border-border">
+      <div className="shrink-0 p-3 border-b border-border flex items-center justify-between">
         <h3 className="text-sm font-semibold">Build Log</h3>
         {complete && (
           <span
@@ -32,7 +34,10 @@ export default function BuildLog({ events, complete }: BuildLogProps) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 font-mono text-xs space-y-1">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain p-3 font-mono text-xs space-y-1"
+      >
         {events.map((event, i) => {
           if (event.type === "log") {
             return (
@@ -78,7 +83,6 @@ export default function BuildLog({ events, complete }: BuildLogProps) {
           }
           return null;
         })}
-        <div ref={bottomRef} />
       </div>
     </div>
   );
