@@ -2,8 +2,9 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { Project, BuildEvent } from "./types";
+import { effectiveBuildInstructionsForPrompt } from "./db";
 
-export function generateClaudeMd(project: Project): string {
+export function generateBuildSpecMarkdown(project: Project): string {
   const arch = project.architecture!;
   const spec = project.spec!;
 
@@ -48,6 +49,15 @@ Environment Variables: ${envs}`;
 
   const serviceIds = arch.nodes.map((n) => n.id).join(", ");
 
+  const globalInstructions = effectiveBuildInstructionsForPrompt();
+  const globalSection = globalInstructions
+    ? `## Global build instructions (from Semicolon settings)
+
+${globalInstructions}
+
+`
+    : "";
+
   return `# Project: ${project.name}
 
 ## Overview
@@ -56,7 +66,7 @@ ${spec.prompt}
 ## User Preferences
 ${prefsSection}
 
-## Architecture
+${globalSection}## Architecture
 
 ### Services
 ${nodesSection}
@@ -97,16 +107,16 @@ export async function* runBuild(
   outputDir: string,
   signal?: AbortSignal
 ): AsyncGenerator<BuildEvent> {
-  // Write CLAUDE.md to outputDir
+  // Write BUILD.md — spec our coding agents read for this run
   fs.mkdirSync(outputDir, { recursive: true });
-  const claudeMdContent = generateClaudeMd(project);
-  fs.writeFileSync(path.join(outputDir, "CLAUDE.md"), claudeMdContent);
+  const buildSpecContent = generateBuildSpecMarkdown(project);
+  fs.writeFileSync(path.join(outputDir, "BUILD.md"), buildSpecContent);
 
   const { query } = await import("@anthropic-ai/claude-agent-sdk");
 
   const nodeIds = project.architecture!.nodes.map((n) => n.id);
 
-  const buildPrompt = `Read the CLAUDE.md file in this directory and build the entire project according to its specifications.
+  const buildPrompt = `Read BUILD.md in this directory. Semicolon's coding agents will use it to build the entire project according to its specifications.
 
 Build services in dependency order: databases first, then APIs, then workers, then frontends.
 

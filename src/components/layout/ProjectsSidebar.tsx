@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Project } from "@/lib/types";
 import { PROJECTS_CHANGED_EVENT } from "@/lib/sidebar-events";
+import BuildInstructionsPanel from "./BuildInstructionsPanel";
 
 const STORAGE_KEY = "semicolon-sidebar-collapsed";
 
@@ -213,6 +214,8 @@ export default function ProjectsSidebar() {
           </nav>
         </>
       )}
+
+      <BuildInstructionsPanel collapsed={collapsed} />
     </aside>
   );
 }

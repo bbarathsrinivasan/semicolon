@@ -11,6 +11,7 @@ import {
   ProjectSpec,
   ArchitectureChatTurn,
 } from "./types";
+import { effectiveBuildInstructionsForPrompt } from "./db";
 
 const client = new Anthropic();
 
@@ -59,12 +60,17 @@ export async function generateClarifyQuestions(
 export async function generateArchitecture(
   spec: ProjectSpec
 ): Promise<Architecture> {
+  const global = effectiveBuildInstructionsForPrompt();
+  const globalBlock = global
+    ? `\n\nGlobal build instructions (from your Semicolon settings — frameworks, stack, style):\n${global}\n`
+    : "";
+
   const userMessage = `Project description: ${spec.prompt}
 
 User preferences:
 ${Object.entries(spec.preferences)
   .map(([key, value]) => `- ${key}: ${value}`)
-  .join("\n")}
+  .join("\n")}${globalBlock}
 
 Generate the complete architecture as a JSON object.`;
 
@@ -112,13 +118,18 @@ export async function reviseArchitecture(
   messages: ArchitectureChatTurn[],
   spec: ProjectSpec | null
 ): Promise<Architecture> {
+  const global = effectiveBuildInstructionsForPrompt();
+  const globalBlock = global
+    ? `\n\nGlobal build instructions (from Semicolon settings):\n${global}\n`
+    : "";
+
   const specBlock = spec
     ? `Original project description:\n${spec.prompt}\n\nPreferences:\n${Object.entries(
         spec.preferences
       )
         .map(([k, v]) => `- ${k}: ${v}`)
-        .join("\n")}`
-    : "(No original spec stored.)";
+        .join("\n")}${globalBlock}`
+    : `(No original spec stored.)${globalBlock ? `\n${globalBlock.trim()}` : ""}`;
 
   const transcript = messages
     .map((m) => `${m.role.toUpperCase()}: ${m.content}`)

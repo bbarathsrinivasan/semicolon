@@ -8,6 +8,10 @@ import {
   ProjectStatus,
   ArchitectureChatTurn,
 } from "./types";
+import {
+  BUILD_INSTRUCTIONS_SETTING_KEY,
+  DEFAULT_BUILD_INSTRUCTIONS_MARKDOWN,
+} from "./build-instructions-default";
 
 const DB_PATH = path.join(process.cwd(), "semicolon.db");
 
@@ -37,6 +41,12 @@ function getDb(): Database.Database {
     if (!cols.some((c) => c.name === "architecture_chat")) {
       db.exec(`ALTER TABLE projects ADD COLUMN architecture_chat TEXT`);
     }
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
   }
   return db;
 }
@@ -175,4 +185,39 @@ export function listProjects(): Project[] {
     .prepare(`SELECT * FROM projects ORDER BY created_at DESC`)
     .all() as Record<string, unknown>[];
   return rows.map(rowToProject);
+}
+
+export function getAppSetting(key: string): string | null {
+  const d = getDb();
+  const row = d
+    .prepare(`SELECT value FROM app_settings WHERE key = ?`)
+    .get(key) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
+export function setAppSetting(key: string, value: string): void {
+  const d = getDb();
+  d.prepare(
+    `INSERT INTO app_settings (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).run(key, value);
+}
+
+/** `undefined` = never saved; use default template in UI and in prompts. */
+export function getStoredBuildInstructions(): string | undefined {
+  const v = getAppSetting(BUILD_INSTRUCTIONS_SETTING_KEY);
+  if (v === null) return undefined;
+  return v;
+}
+
+/** For coding agents: default template when unset; omit section if user saved empty string. */
+export function effectiveBuildInstructionsForPrompt(): string | null {
+  const stored = getStoredBuildInstructions();
+  if (stored === undefined) return DEFAULT_BUILD_INSTRUCTIONS_MARKDOWN;
+  const t = stored.trim();
+  return t === "" ? null : stored;
+}
+
+export function setBuildInstructionsMarkdown(markdown: string): void {
+  setAppSetting(BUILD_INSTRUCTIONS_SETTING_KEY, markdown);
 }

@@ -20,7 +20,7 @@ export default function Home() {
         <p className="text-muted leading-relaxed">
           Tell us what you want to build. We&apos;ll generate an interactive
           architecture diagram, let you refine every service and endpoint, then
-          use Claude Code to build the entire project for you.
+          our coding agents will build the entire project for you.
         </p>
 
         <button
