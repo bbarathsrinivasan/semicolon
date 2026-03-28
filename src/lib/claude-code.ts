@@ -94,7 +94,8 @@ Create the \`.semicolon/\` directory if it doesn't exist.
 
 export async function* runBuild(
   project: Project,
-  outputDir: string
+  outputDir: string,
+  signal?: AbortSignal
 ): AsyncGenerator<BuildEvent> {
   // Write CLAUDE.md to outputDir
   fs.mkdirSync(outputDir, { recursive: true });
@@ -125,6 +126,15 @@ After building each service, create a marker file at .semicolon/{serviceId}.done
     });
 
     for await (const message of messages) {
+      if (signal?.aborted) {
+        yield {
+          type: "complete",
+          success: false,
+          error: "Build interrupted.",
+        };
+        return;
+      }
+
       if (message.type === "assistant") {
         // Iterate over content blocks in the BetaMessage
         for (const block of message.message.content) {

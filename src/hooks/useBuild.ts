@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { BuildEvent, ArchNode } from "@/lib/types";
 
 export function useBuild(projectId: string) {
@@ -14,7 +14,22 @@ export function useBuild(projectId: string) {
     error?: string;
   } | null>(null);
 
+  const abortRef = useRef<AbortController | null>(null);
+
+  const clearLiveEvents = useCallback(() => {
+    setEvents([]);
+    setNodeStatuses({});
+  }, []);
+
+  const abortBuild = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
   const startBuild = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setIsBuilding(true);
     setEvents([]);
     setComplete(null);
@@ -24,6 +39,7 @@ export function useBuild(projectId: string) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId }),
+        signal: ac.signal,
       });
 
       if (!response.ok) {
@@ -66,6 +82,10 @@ export function useBuild(projectId: string) {
         }
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setIsBuilding(false);
+        return;
+      }
       setEvents((prev) => [
         ...prev,
         {
@@ -76,8 +96,20 @@ export function useBuild(projectId: string) {
       ]);
       setComplete({ success: false, error: String(err) });
       setIsBuilding(false);
+    } finally {
+      if (abortRef.current === ac) {
+        abortRef.current = null;
+      }
     }
   }, [projectId]);
 
-  return { events, isBuilding, nodeStatuses, complete, startBuild };
+  return {
+    events,
+    isBuilding,
+    nodeStatuses,
+    complete,
+    startBuild,
+    abortBuild,
+    clearLiveEvents,
+  };
 }

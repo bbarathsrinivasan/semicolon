@@ -28,7 +28,7 @@ export default function DetailPanel({
   );
 
   return (
-    <div className="w-[420px] h-full bg-surface border-l border-border overflow-y-auto">
+    <div className="w-[420px] min-h-0 max-h-full shrink-0 h-full bg-surface border-l border-border overflow-y-auto overscroll-y-contain">
       {/* Header */}
       <div className="sticky top-0 bg-surface border-b border-border p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">

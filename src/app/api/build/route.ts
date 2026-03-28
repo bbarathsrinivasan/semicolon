@@ -1,5 +1,11 @@
-import { getProject, updateProject, appendBuildLog, updateNodeStatus } from "@/lib/db";
+import {
+  getProject,
+  updateProject,
+  appendBuildLog,
+  updateNodeStatus,
+} from "@/lib/db";
 import { runBuild, getOutputDir } from "@/lib/claude-code";
+import { interruptBuildSession } from "@/lib/build-interrupt";
 import { BuildEvent } from "@/lib/types";
 
 export const maxDuration = 300; // 5 minute timeout for build
@@ -31,31 +37,62 @@ export async function POST(request: Request) {
     return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
   }
 
+  let interruptHandled = false;
+
+  function finalizeInterrupt(detail: string) {
+    if (interruptHandled) return;
+    interruptHandled = true;
+    interruptBuildSession(projectId, detail);
+  }
+
+  const onAbort = () => {
+    finalizeInterrupt("Client disconnected.");
+  };
+  request.signal.addEventListener("abort", onAbort);
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runBuild(project, outputDir)) {
-          controller.enqueue(sseEvent(event));
+        for await (const event of runBuild(
+          project,
+          outputDir,
+          request.signal
+        )) {
+          try {
+            controller.enqueue(sseEvent(event));
+          } catch {
+            finalizeInterrupt("Client disconnected.");
+            break;
+          }
 
-          // Persist to build log
           if (event.type === "log") {
             appendBuildLog(projectId, event.text);
           }
           if (event.type === "tool_use") {
             appendBuildLog(projectId, `[${event.tool}] ${event.input}`);
           }
-
-          // Update node statuses in DB
           if (event.type === "service_status") {
             updateNodeStatus(projectId, event.serviceId, event.status);
           }
 
-          // Update project status on completion
           if (event.type === "complete") {
-            updateProject(projectId, {
-              status: event.success ? "built" : "error",
-            });
+            if (event.success) {
+              updateProject(projectId, { status: "built" });
+            } else if (interruptHandled) {
+              /* interrupt path already updated DB */
+            } else {
+              const err = String(event.error ?? "").toLowerCase();
+              if (err.includes("interrupt")) {
+                finalizeInterrupt(String(event.error));
+              } else {
+                updateProject(projectId, { status: "error" });
+              }
+            }
           }
+        }
+
+        if (request.signal.aborted && !interruptHandled) {
+          finalizeInterrupt("Client disconnected.");
         }
       } catch (err) {
         const errorEvent: BuildEvent = {
@@ -63,11 +100,25 @@ export async function POST(request: Request) {
           success: false,
           error: String(err),
         };
-        controller.enqueue(sseEvent(errorEvent));
-        updateProject(projectId, { status: "error" });
+        try {
+          controller.enqueue(sseEvent(errorEvent));
+        } catch {
+          /* client gone */
+        }
+        if (!interruptHandled) {
+          updateProject(projectId, { status: "error" });
+        }
       } finally {
-        controller.close();
+        request.signal.removeEventListener("abort", onAbort);
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
       }
+    },
+    cancel() {
+      finalizeInterrupt("Client disconnected.");
     },
   });
 

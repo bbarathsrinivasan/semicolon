@@ -47,6 +47,18 @@ export type ProjectStatus =
   | "built"
   | "error";
 
+export type ArchitectureChatTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+/** Shown when a project has no saved architecture edit history yet. */
+export const DEFAULT_ARCHITECTURE_CHAT_INTRO: ArchitectureChatTurn = {
+  role: "assistant",
+  content:
+    "Describe changes to your architecture: add or remove services, endpoints, connections, or tech choices. I’ll update the diagram after each message.",
+};
+
 export interface Project {
   id: string;
   name: string;
@@ -55,6 +67,7 @@ export interface Project {
   status: ProjectStatus;
   buildLog: string;
   outputDir: string | null;
+  architectureChat: ArchitectureChatTurn[] | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PROJECTS_CHANGED_EVENT } from "@/lib/sidebar-events";
 import { ClarifyQuestion } from "@/lib/types";
 import QuestionCard from "./QuestionCard";
 
@@ -69,6 +70,7 @@ export default function ChatInterface() {
         body: JSON.stringify({ projectId: project.id, spec }),
       });
 
+      window.dispatchEvent(new Event(PROJECTS_CHANGED_EVENT));
       router.push(`/project/${project.id}`);
     } catch (err) {
       console.error("Failed to generate:", err);

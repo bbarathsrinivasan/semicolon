@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   ReactFlow,
   Background,
@@ -26,6 +26,8 @@ interface ArchitectureDiagramProps {
   onNodeClick?: (nodeId: string) => void;
   onBuild?: () => void;
   isBuilding?: boolean;
+  onEditArchitecture?: () => void | Promise<void>;
+  editArchitectureDisabled?: boolean;
 }
 
 export default function ArchitectureDiagram({
@@ -34,6 +36,8 @@ export default function ArchitectureDiagram({
   onNodeClick,
   onBuild,
   isBuilding,
+  onEditArchitecture,
+  editArchitectureDisabled,
 }: ArchitectureDiagramProps) {
   // Merge live statuses into architecture nodes
   const mergedNodes = useMemo(() => {
@@ -52,6 +56,11 @@ export default function ArchitectureDiagram({
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
 
+  useEffect(() => {
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+  }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
+
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       onNodeClick?.(node.id);
@@ -69,8 +78,9 @@ export default function ArchitectureDiagram({
   }, [mergedNodes, architecture.edges, setNodes, setEdges]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="relative h-full min-h-0 w-full overflow-hidden">
       <ReactFlow
+        className="h-full w-full"
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -97,8 +107,19 @@ export default function ArchitectureDiagram({
         >
           Re-layout
         </button>
+        {onEditArchitecture && (
+          <button
+            type="button"
+            onClick={() => void onEditArchitecture?.()}
+            disabled={editArchitectureDisabled}
+            className="px-4 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Edit architecture
+          </button>
+        )}
         {onBuild && (
           <button
+            type="button"
             onClick={onBuild}
             disabled={isBuilding}
             className="px-4 py-1.5 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"

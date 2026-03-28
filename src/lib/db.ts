@@ -6,6 +6,7 @@ import {
   ProjectSpec,
   Architecture,
   ProjectStatus,
+  ArchitectureChatTurn,
 } from "./types";
 
 const DB_PATH = path.join(process.cwd(), "semicolon.db");
@@ -25,15 +26,31 @@ function getDb(): Database.Database {
         status TEXT NOT NULL DEFAULT 'specifying',
         build_log TEXT DEFAULT '',
         output_dir TEXT,
+        architecture_chat TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
+    const cols = db
+      .prepare(`PRAGMA table_info(projects)`)
+      .all() as { name: string }[];
+    if (!cols.some((c) => c.name === "architecture_chat")) {
+      db.exec(`ALTER TABLE projects ADD COLUMN architecture_chat TEXT`);
+    }
   }
   return db;
 }
 
 function rowToProject(row: Record<string, unknown>): Project {
+  let architectureChat: ArchitectureChatTurn[] | null = null;
+  const rawChat = row.architecture_chat as string | null | undefined;
+  if (rawChat) {
+    try {
+      architectureChat = JSON.parse(rawChat) as ArchitectureChatTurn[];
+    } catch {
+      architectureChat = null;
+    }
+  }
   return {
     id: row.id as string,
     name: row.name as string,
@@ -44,6 +61,7 @@ function rowToProject(row: Record<string, unknown>): Project {
     status: row.status as ProjectStatus,
     buildLog: (row.build_log as string) || "",
     outputDir: (row.output_dir as string) || null,
+    architectureChat,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -78,6 +96,7 @@ export function updateProject(
     status?: ProjectStatus;
     buildLog?: string;
     outputDir?: string;
+    architectureChat?: ArchitectureChatTurn[] | null;
   }
 ): void {
   const d = getDb();
@@ -107,6 +126,14 @@ export function updateProject(
   if (updates.outputDir !== undefined) {
     sets.push("output_dir = ?");
     values.push(updates.outputDir);
+  }
+  if (updates.architectureChat !== undefined) {
+    sets.push("architecture_chat = ?");
+    values.push(
+      updates.architectureChat === null
+        ? null
+        : JSON.stringify(updates.architectureChat)
+    );
   }
 
   if (sets.length === 0) return;

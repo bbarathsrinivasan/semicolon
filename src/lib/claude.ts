@@ -1,7 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Message } from "@anthropic-ai/sdk/resources/messages";
-import { CLARIFY_SYSTEM_PROMPT, GENERATE_SYSTEM_PROMPT } from "./prompts";
-import { ClarifyQuestion, Architecture, ProjectSpec } from "./types";
+import {
+  CLARIFY_SYSTEM_PROMPT,
+  GENERATE_SYSTEM_PROMPT,
+  EDIT_ARCHITECTURE_SYSTEM_PROMPT,
+} from "./prompts";
+import {
+  ClarifyQuestion,
+  Architecture,
+  ProjectSpec,
+  ArchitectureChatTurn,
+} from "./types";
 
 const client = new Anthropic();
 
@@ -96,4 +105,64 @@ Generate the complete architecture as a JSON object.`;
   }
 
   return architecture;
+}
+
+export async function reviseArchitecture(
+  architecture: Architecture,
+  messages: ArchitectureChatTurn[],
+  spec: ProjectSpec | null
+): Promise<Architecture> {
+  const specBlock = spec
+    ? `Original project description:\n${spec.prompt}\n\nPreferences:\n${Object.entries(
+        spec.preferences
+      )
+        .map(([k, v]) => `- ${k}: ${v}`)
+        .join("\n")}`
+    : "(No original spec stored.)";
+
+  const transcript = messages
+    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+    .join("\n\n");
+
+  const userMessage = `Current architecture JSON:
+${JSON.stringify(architecture, null, 2)}
+
+${specBlock}
+
+Conversation (apply all user requests, with the latest message being the most important):
+${transcript}
+
+Return the full updated architecture as one JSON object.`;
+
+  const createParams = {
+    model: "claude-sonnet-4-6" as const,
+    max_tokens: 16384,
+    system: EDIT_ARCHITECTURE_SYSTEM_PROMPT,
+    messages: [{ role: "user" as const, content: userMessage }],
+  };
+
+  let message = await client.messages.create(createParams);
+  let text = getMessageText(message);
+
+  let next: Architecture;
+  try {
+    next = parseArchitectureJson(text);
+  } catch {
+    message = await client.messages.create({
+      ...createParams,
+      messages: [
+        ...createParams.messages,
+        { role: "assistant" as const, content: text },
+        {
+          role: "user" as const,
+          content:
+            "Your previous reply was not valid JSON. Reply with ONLY one complete JSON object matching the architecture schema. No markdown.",
+        },
+      ],
+    });
+    text = getMessageText(message);
+    next = parseArchitectureJson(text);
+  }
+
+  return next;
 }

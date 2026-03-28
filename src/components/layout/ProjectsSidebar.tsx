@@ -4,10 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Project } from "@/lib/types";
+import { PROJECTS_CHANGED_EVENT } from "@/lib/sidebar-events";
 
 const STORAGE_KEY = "semicolon-sidebar-collapsed";
-
-export const PROJECTS_CHANGED_EVENT = "semicolon-projects-changed";
 
 function HomeIcon({ className }: { className?: string }) {
   return (
@@ -120,13 +119,9 @@ export default function ProjectsSidebar() {
     return () => window.removeEventListener(PROJECTS_CHANGED_EVENT, onChange);
   }, [loadProjects]);
 
-  const toggleCollapsed = () => setCollapsed((c) => !c);
-
-  const isProjectActive = (id: string) => pathname === `/project/${id}`;
-
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 ease-out ${
+      className={`flex h-dvh min-h-0 shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-200 ease-out ${
         collapsed ? "w-14" : "w-60"
       }`}
     >
@@ -145,7 +140,7 @@ export default function ProjectsSidebar() {
         )}
         <button
           type="button"
-          onClick={toggleCollapsed}
+          onClick={() => setCollapsed((c) => !c)}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface-hover hover:text-foreground transition-colors cursor-pointer"
         >
@@ -154,8 +149,10 @@ export default function ProjectsSidebar() {
       </div>
 
       <div
-        className={`flex shrink-0 flex-col gap-2 border-b border-border py-3 ${
-          collapsed ? "items-center px-0" : "px-3"
+        className={`flex shrink-0 flex-col gap-2 border-border py-3 ${
+          collapsed
+            ? "items-center border-b px-0"
+            : "border-b px-3"
         }`}
       >
         <Link
@@ -173,7 +170,7 @@ export default function ProjectsSidebar() {
           title="New project"
           className={`flex items-center gap-3 rounded-lg text-sm font-medium text-white bg-accent hover:bg-accent-hover transition-colors ${
             collapsed ? "h-10 w-10 justify-center p-0" : "px-3 py-2"
-          } ${pathname === "/new" ? "ring-2 ring-accent-hover ring-offset-2 ring-offset-surface" : ""}`}
+          } ${pathname === "/new" ? "brightness-110" : ""}`}
         >
           <PlusIcon className="shrink-0" />
           {!collapsed && <span>New project</span>}
@@ -181,59 +178,41 @@ export default function ProjectsSidebar() {
       </div>
 
       {!collapsed && (
-        <p className="shrink-0 px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
-          Recent
-        </p>
-      )}
-
-      <nav
-        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain py-2 ${
-          collapsed ? "flex flex-col items-center gap-1 px-0" : "space-y-0.5 px-2"
-        }`}
-        aria-label="Recent projects"
-      >
-        {loading && !collapsed && (
-          <p className="px-2 py-2 text-xs text-muted">Loading…</p>
-        )}
-        {!loading && projects.length === 0 && !collapsed && (
-          <p className="px-2 py-2 text-xs text-muted leading-relaxed">
-            No projects yet. Start a new one to see it here.
+        <>
+          <p className="shrink-0 px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Recent
           </p>
-        )}
-        {projects.map((p) => {
-          const active = isProjectActive(p.id);
-          const initial = (p.name?.trim()?.[0] || "?").toUpperCase();
-          if (collapsed) {
-            return (
-              <Link
-                key={p.id}
-                href={`/project/${p.id}`}
-                title={p.name}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                  active
-                    ? "bg-accent text-white"
-                    : "bg-background text-foreground hover:bg-surface-hover"
-                }`}
-              >
-                {initial}
-              </Link>
-            );
-          }
-          return (
-            <Link
-              key={p.id}
-              href={`/project/${p.id}`}
-              className={`block truncate rounded-lg px-2 py-2 text-sm transition-colors ${
-                active
-                  ? "bg-surface-hover text-foreground font-medium"
-                  : "text-muted hover:bg-surface-hover hover:text-foreground"
-              }`}
-            >
-              {p.name || "Untitled"}
-            </Link>
-          );
-        })}
-      </nav>
+          <nav
+            className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2 py-2"
+            aria-label="Recent projects"
+          >
+            {loading && (
+              <p className="px-2 py-2 text-xs text-muted">Loading…</p>
+            )}
+            {!loading && projects.length === 0 && (
+              <p className="px-2 py-2 text-xs text-muted leading-relaxed">
+                No projects yet. Start a new one to see it here.
+              </p>
+            )}
+            {projects.map((p) => {
+              const active = pathname === `/project/${p.id}`;
+              return (
+                <Link
+                  key={p.id}
+                  href={`/project/${p.id}`}
+                  className={`block truncate rounded-lg px-2 py-2 text-sm transition-colors ${
+                    active
+                      ? "bg-surface-hover font-medium text-foreground"
+                      : "text-muted hover:bg-surface-hover hover:text-foreground"
+                  }`}
+                >
+                  {p.name || "Untitled"}
+                </Link>
+              );
+            })}
+          </nav>
+        </>
+      )}
     </aside>
   );
 }
