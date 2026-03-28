@@ -40,3 +40,22 @@ npm run dev
 Then open [http://localhost:3000](http://localhost:3000).
 
 **Stack:** Next.js, React Flow, coding agents + AI APIs, SQLite (better-sqlite3).
+
+### Deploy `demo/index.html` on Vercel
+
+The CMU blog page in `demo/` is static HTML (CDN assets only). Treat it as its own Vercel project so it does not use the Next.js build:
+
+1. Push this repo to GitHub (or connect your Git provider in Vercel).
+2. **New Project** → import the repo.
+3. Open **Project Settings → General → Root Directory** → set to `demo` and save.
+4. **Settings → General → Framework Preset** → **Other** (no framework).
+5. Clear **Build Command** and **Output Directory** if the UI filled them in; there is no build step.
+6. Deploy. The site is served at `/` as `index.html`.
+
+From a terminal (after `npx vercel login`):
+
+```bash
+cd demo && npx vercel --prod
+```
+
+Link the CLI to the same project or create a new one when prompted.

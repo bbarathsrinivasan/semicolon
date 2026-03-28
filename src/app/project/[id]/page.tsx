@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Project,
@@ -14,6 +14,10 @@ import DetailPanel from "@/components/diagram/DetailPanel";
 import BuildLog from "@/components/build/BuildLog";
 import EditArchitectureChat from "@/components/architecture/EditArchitectureChat";
 import { useBuild } from "@/hooks/useBuild";
+import {
+  DEMO_ALL_BUILT_PROJECT_ID,
+  DEMO_PROJECT_PUBLIC_URL,
+} from "@/lib/demo-project";
 
 type RightPanel = "none" | "build" | "edit";
 
@@ -28,9 +32,14 @@ export default function ProjectPage() {
   const [rightPanel, setRightPanel] = useState<RightPanel>("none");
   const [architectureChatInputPrefill, setArchitectureChatInputPrefill] =
     useState<string | null>(null);
+  const [architectureChatComposeLabel, setArchitectureChatComposeLabel] =
+    useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const [syncUi, setSyncUi] = useState<"idle" | "loading" | "synced">("idle");
+  const [gitModalOpen, setGitModalOpen] = useState(false);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     events,
@@ -148,6 +157,20 @@ export default function ProjectPage() {
     };
   }, [isBuilding, projectId, router, stopBuildAndSync]);
 
+  const architectureForView = useMemo((): Architecture | null => {
+    if (!project?.architecture) return null;
+    if (projectId !== DEMO_ALL_BUILT_PROJECT_ID || isBuilding) {
+      return project.architecture;
+    }
+    return {
+      ...project.architecture,
+      nodes: project.architecture.nodes.map((n) => ({
+        ...n,
+        status: "built" as ArchNode["status"],
+      })),
+    };
+  }, [project?.architecture, projectId, isBuilding]);
+
   const handleNodeClick = useCallback((nodeId: string) => {
     setSelectedNodeId((prev) => (prev === nodeId ? null : nodeId));
   }, []);
@@ -179,7 +202,11 @@ export default function ProjectPage() {
   }, [startBuild]);
 
   const openEditArchitecture = useCallback(
-    async (options?: { inputPrefill?: string | null }) => {
+    async (options?: {
+      inputPrefill?: string | null;
+      /** Shown above the chat compose box when opening from Refine with AI */
+      composeLabel?: string | null;
+    }) => {
       if (isBuilding) {
         if (
           !window.confirm(
@@ -191,6 +218,7 @@ export default function ProjectPage() {
         await stopBuildAndSync();
       }
       setArchitectureChatInputPrefill(options?.inputPrefill ?? null);
+      setArchitectureChatComposeLabel(options?.composeLabel ?? null);
       setRightPanel("edit");
     },
     [isBuilding, stopBuildAndSync]
@@ -266,6 +294,22 @@ export default function ProjectPage() {
     }
   }, [projectId]);
 
+  const handleSyncClick = useCallback(() => {
+    if (syncUi === "loading") return;
+    setSyncUi("loading");
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = setTimeout(() => {
+      syncTimeoutRef.current = null;
+      setSyncUi("synced");
+    }, 1400);
+  }, [syncUi]);
+
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -293,11 +337,16 @@ export default function ProjectPage() {
     );
   }
 
-  const selectedNode = selectedNodeId
-    ? project.architecture.nodes.find((n) => n.id === selectedNodeId) || null
-    : null;
+  const selectedNode =
+    selectedNodeId && architectureForView
+      ? architectureForView.nodes.find((n) => n.id === selectedNodeId) ?? null
+      : null;
 
-  const displayStatus = isBuilding ? "building" : project.status;
+  const displayStatus = isBuilding
+    ? "building"
+    : projectId === DEMO_ALL_BUILT_PROJECT_ID
+      ? "built"
+      : project.status;
 
   const toggleBuildLog = () => {
     if (rightPanel === "build") {
@@ -402,6 +451,38 @@ export default function ProjectPage() {
           >
             Open in VS Code
           </button>
+          <button
+            type="button"
+            onClick={handleSyncClick}
+            disabled={syncUi === "loading"}
+            title="Sync project"
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded border px-2 py-0.5 text-xs transition-colors disabled:cursor-wait ${
+              syncUi === "synced"
+                ? "border-green-500/40 text-green-400 hover:border-green-400/60 hover:text-green-300"
+                : "border-border text-muted hover:border-accent hover:text-accent"
+            }`}
+          >
+            {syncUi === "loading" ? (
+              <>
+                <span
+                  className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-accent/30 border-t-accent"
+                  aria-hidden
+                />
+                Syncing…
+              </>
+            ) : syncUi === "synced" ? (
+              "Synced"
+            ) : (
+              "Sync"
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGitModalOpen(true)}
+            className="cursor-pointer rounded border border-border px-2 py-0.5 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+          >
+            Publish in Git
+          </button>
         </div>
       </header>
 
@@ -410,8 +491,17 @@ export default function ProjectPage() {
         {/* Diagram + full-area detail overlay */}
         <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <ArchitectureDiagram
-            architecture={project.architecture}
-            nodeStatuses={nodeStatuses}
+            architecture={architectureForView!}
+            demoDeployUrl={
+              projectId === DEMO_ALL_BUILT_PROJECT_ID
+                ? DEMO_PROJECT_PUBLIC_URL
+                : undefined
+            }
+            nodeStatuses={
+              projectId === DEMO_ALL_BUILT_PROJECT_ID && !isBuilding
+                ? undefined
+                : nodeStatuses
+            }
             onNodeClick={handleNodeClick}
             onBuild={handleBuild}
             isBuilding={isBuilding}
@@ -420,12 +510,13 @@ export default function ProjectPage() {
           {selectedNode && (
             <DetailPanel
               node={selectedNode}
-              edges={project.architecture.edges}
+              edges={architectureForView!.edges}
               onClose={() => setSelectedNodeId(null)}
               onUpdateNode={handleUpdateNode}
               onEditWithAI={(node) => {
                 void openEditArchitecture({
-                  inputPrefill: `Update the "${node.label}" service (id: \`${node.id}\`, type: ${node.type}). `,
+                  inputPrefill: null,
+                  composeLabel: `${node.label} · ${node.type} · id \`${node.id}\``,
                 });
                 setSelectedNodeId(null);
               }}
@@ -440,6 +531,9 @@ export default function ProjectPage() {
               events={events}
               isBuilding={isBuilding}
               complete={complete}
+              demoSuccessfulBuild={
+                projectId === DEMO_ALL_BUILT_PROJECT_ID && !isBuilding
+              }
             />
           </div>
         )}
@@ -451,12 +545,141 @@ export default function ProjectPage() {
               initialMessages={project.architectureChat}
               inputPrefill={architectureChatInputPrefill}
               onInputPrefillConsumed={clearArchitectureChatInputPrefill}
-              onClose={() => setRightPanel("none")}
+              composeContextLabel={architectureChatComposeLabel}
+              onClose={() => {
+                setArchitectureChatComposeLabel(null);
+                setRightPanel("none");
+              }}
               onSynced={handleArchitectureChatSynced}
             />
           </div>
         )}
       </div>
+
+      {gitModalOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
+          role="presentation"
+          onClick={() => setGitModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="git-connect-title"
+            aria-describedby="git-connect-desc"
+            className="relative w-full max-w-lg rounded-2xl border border-border bg-surface p-0 shadow-2xl ring-1 ring-white/[0.06]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setGitModalOpen(false)}
+              className="absolute right-3 top-3 rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+              aria-label="Close"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden
+              >
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="border-b border-border px-6 pb-4 pt-6 pr-14">
+              <div className="flex items-center gap-4">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F05032]/15 ring-1 ring-[#F05032]/25"
+                  aria-hidden
+                >
+                  <svg
+                    className="h-7 w-7 text-[#F05032]"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden
+                  >
+                    <path d="M23.546 10.93L13.067.452c-.604-.603-1.582-.603-2.188 0L8.708 2.627l2.76 2.76c.645-.215 1.379-.07 1.889.441.516.515.658 1.258.438 1.9l2.658 2.66c.645-.223 1.387-.078 1.9.435.721.72.721 1.884 0 2.604-.719.719-1.881.719-2.6 0-.539-.541-.674-1.337-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348.713.721.713 1.883 0 2.599-.719.72-1.881.72-2.602 0-.719-.719-.719-1.878 0-2.598.182-.18.387-.316.605-.406V8.835c-.217-.091-.424-.222-.6-.401-.545-.545-.676-1.342-.396-2.009L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477c.604.604 1.582.604 2.186 0l10.43-10.43c.605-.603.605-1.582 0-2.187" />
+                  </svg>
+                </div>
+                <div className="min-w-0 text-left">
+                  <h2
+                    id="git-connect-title"
+                    className="text-lg font-semibold tracking-tight text-foreground"
+                  >
+                    Publish in Git
+                  </h2>
+                  <p
+                    id="git-connect-desc"
+                    className="mt-0.5 text-sm text-muted"
+                  >
+                    Link a remote repository to push builds and keep history in
+                    sync.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-5">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
+                Connection
+              </p>
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-hover/35 px-4 py-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F05032]/12 text-[#F05032]"
+                  aria-hidden
+                >
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden
+                  >
+                    <path d="M23.546 10.93L13.067.452c-.604-.603-1.582-.603-2.188 0L8.708 2.627l2.76 2.76c.645-.215 1.379-.07 1.889.441.516.515.658 1.258.438 1.9l2.658 2.66c.645-.223 1.387-.078 1.9.435.721.72.721 1.884 0 2.604-.719.719-1.881.719-2.6 0-.539-.541-.674-1.337-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348.713.721.713 1.883 0 2.599-.719.72-1.881.72-2.602 0-.719-.719-.719-1.878 0-2.598.182-.18.387-.316.605-.406V8.835c-.217-.091-.424-.222-.6-.401-.545-.545-.676-1.342-.396-2.009L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477c.604.604 1.582.604 2.186 0l10.43-10.43c.605-.603.605-1.582 0-2.187" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Connect to Git
+                  </p>
+                  <p className="truncate text-xs text-muted">
+                    Sign in with GitHub, GitLab, or another provider to
+                    continue.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-border bg-surface-hover/25 px-6 py-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setGitModalOpen(false)}
+                className="w-full cursor-pointer rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-hover sm:w-auto"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setGitModalOpen(false)}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover sm:w-auto"
+              >
+                <svg
+                  className="h-4 w-4 shrink-0 opacity-95"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M23.546 10.93L13.067.452c-.604-.603-1.582-.603-2.188 0L8.708 2.627l2.76 2.76c.645-.215 1.379-.07 1.889.441.516.515.658 1.258.438 1.9l2.658 2.66c.645-.223 1.387-.078 1.9.435.721.72.721 1.884 0 2.604-.719.719-1.881.719-2.6 0-.539-.541-.674-1.337-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348.713.721.713 1.883 0 2.599-.719.72-1.881.72-2.602 0-.719-.719-.719-1.878 0-2.598.182-.18.387-.316.605-.406V8.835c-.217-.091-.424-.222-.6-.401-.545-.545-.676-1.342-.396-2.009L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477c.604.604 1.582.604 2.186 0l10.43-10.43c.605-.603.605-1.582 0-2.187" />
+                </svg>
+                Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

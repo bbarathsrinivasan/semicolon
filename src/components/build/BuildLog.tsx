@@ -8,6 +8,8 @@ interface BuildLogProps {
   events: BuildEvent[];
   isBuilding: boolean;
   complete: { success: boolean; error?: string } | null;
+  /** When true (hackathon demo project), header always shows success when idle. */
+  demoSuccessfulBuild?: boolean;
 }
 
 function renderEvent(event: BuildEvent, i: number) {
@@ -64,6 +66,7 @@ export default function BuildLog({
   events,
   isBuilding,
   complete,
+  demoSuccessfulBuild,
 }: BuildLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const showHistory = persistedLog.trim().length > 0 && !isBuilding;
@@ -82,18 +85,22 @@ export default function BuildLog({
     });
   }, [scrollKey]);
 
-  const headerStatus =
-    complete && !isBuilding ? (
-      <span
-        className={`text-xs px-2 py-0.5 rounded ${
-          complete.success
-            ? "bg-green-500/20 text-green-400"
-            : "bg-red-500/20 text-red-400"
-        }`}
-      >
-        {complete.success ? "Build complete" : "Build failed"}
-      </span>
-    ) : null;
+  const showHeaderBadge =
+    !isBuilding && (demoSuccessfulBuild || complete !== null);
+  const effectiveSuccess =
+    Boolean(demoSuccessfulBuild) || complete?.success === true;
+
+  const headerStatus = showHeaderBadge ? (
+    <span
+      className={`text-xs px-2 py-0.5 rounded ${
+        effectiveSuccess
+          ? "bg-green-500/20 text-green-400"
+          : "bg-red-500/20 text-red-400"
+      }`}
+    >
+      {effectiveSuccess ? "Built successfully" : "Build failed"}
+    </span>
+  ) : null;
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-background border-l border-border">

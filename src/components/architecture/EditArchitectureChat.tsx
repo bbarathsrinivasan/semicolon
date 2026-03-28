@@ -15,9 +15,11 @@ export type ArchitectureChatSyncPayload = {
 interface EditArchitectureChatProps {
   projectId: string;
   initialMessages: ArchitectureChatTurn[] | null;
-  /** When set, replaces the compose box once (e.g. opening from Refine with AI on a node). */
+  /** When set, replaces the compose box once (optional; Refine with AI uses the banner only). */
   inputPrefill: string | null;
   onInputPrefillConsumed?: () => void;
+  /** Shown above the textarea when opening via Refine with AI (service label · type · id). */
+  composeContextLabel?: string | null;
   onClose: () => void;
   onSynced: (payload: ArchitectureChatSyncPayload) => void;
 }
@@ -34,6 +36,7 @@ export default function EditArchitectureChat({
   initialMessages,
   inputPrefill,
   onInputPrefillConsumed,
+  composeContextLabel,
   onClose,
   onSynced,
 }: EditArchitectureChatProps) {
@@ -164,6 +167,16 @@ export default function EditArchitectureChat({
       </div>
 
       <div className="shrink-0 border-t border-border p-3">
+        {composeContextLabel ? (
+          <div className="mb-2 rounded-lg border border-accent/35 bg-accent/10 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">
+              Refine with AI
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-foreground leading-snug">
+              {composeContextLabel}
+            </p>
+          </div>
+        ) : null}
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -173,7 +186,11 @@ export default function EditArchitectureChat({
               void send();
             }
           }}
-          placeholder="e.g. Add a Redis cache between the API and the database…"
+          placeholder={
+            composeContextLabel
+              ? "Describe what you want changed for this service…"
+              : "e.g. Add a Redis cache between the API and the database…"
+          }
           disabled={loading}
           rows={3}
           className="mb-2 w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none disabled:opacity-50"

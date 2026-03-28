@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carnegie Mellon University — Blog</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cmu: {
+              red:      '#C41230',
+              darkred:  '#9e0e26',
+              gray:     '#63666A',
+              lightgray:'#F2F2F2',
+              white:    '#FFFFFF',
+            }
+          },
+          fontFamily: {
+            sans:  ['Inter', 'sans-serif'],
+            serif: ['Crimson Text', 'Georgia', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Smooth scrolling & base */
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Sticky nav active link */
+    .nav-link.active { color: #C41230; border-bottom: 2px solid #C41230; }
+
+    /* Hero gradient overlay */
+    .hero-overlay {
+      background: linear-gradient(135deg, rgba(196,18,48,0.88) 0%, rgba(30,30,30,0.75) 100%);
+    }
+
+    /* Card hover lift */
+    .card-lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+    .card-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
+
+    /* Section reveal animation */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.55s ease, transform 0.55s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* Scrollbar thin styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F2F2F2; }
+    ::-webkit-scrollbar-thumb { background: #C41230; border-radius: 3px; }
+  </style>
+</head>
+
+<body class="bg-white text-gray-800">
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm shadow-sm transition-shadow duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Logo -->
+        <a href="#hero" class="flex items-center gap-2 group">
+          <div class="w-9 h-9 bg-cmu-red rounded flex items-center justify-center">
+            <span class="text-white font-bold text-sm tracking-tight">CMU</span>
+          </div>
+          <span class="hidden sm:block font-semibold text-gray-900 group-hover:text-cmu-red transition-colors">
+            Carnegie Mellon
+          </span>
+        </a>
+
+        <!-- Desktop links -->
+        <ul class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
+          <li><a href="#about"      class="nav-link hover:text-cmu-red transition-colors pb-0.5">About</a></li>
+          <li><a href="#programs"   class="nav-link hover:text-cmu-red transition-colors pb-0.5">Programs</a></li>
+          <li><a href="#campus"     class="nav-link hover:text-cmu-red transition-colors pb-0.5">Campus Life</a></li>
+          <li><a href="#news"       class="nav-link hover:text-cmu-red transition-colors pb-0.5">News</a></li>
+          <li>
+            <a href="https://www.cmu.edu" target="_blank" rel="noopener"
+               class="ml-2 px-4 py-2 bg-cmu-red text-white rounded hover:bg-cmu-darkred transition-colors">
+              Visit CMU.edu
+            </a>
+          </li>
+        </ul>
+
+        <!-- Mobile menu button -->
+        <button id="menuBtn" class="md:hidden p-2 rounded text-gray-600 hover:text-cmu-red hover:bg-gray-100 transition-colors" aria-label="Toggle menu">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="md:hidden hidden border-t border-gray-100 bg-white">
+      <ul class="flex flex-col px-4 py-3 gap-3 text-sm font-medium text-gray-700">
+        <li><a href="#about"    class="block py-1 hover:text-cmu-red transition-colors" onclick="closeMobileMenu()">About</a></li>
+        <li><a href="#programs" class="block py-1 hover:text-cmu-red transition-colors" onclick="closeMobileMenu()">Programs</a></li>
+        <li><a href="#campus"   class="block py-1 hover:text-cmu-red transition-colors" onclick="closeMobileMenu()">Campus Life</a></li>
+        <li><a href="#news"     class="block py-1 hover:text-cmu-red transition-colors" onclick="closeMobileMenu()">News</a></li>
+        <li>
+          <a href="https://www.cmu.edu" target="_blank" rel="noopener"
+             class="inline-block mt-1 px-4 py-2 bg-cmu-red text-white rounded hover:bg-cmu-darkred transition-colors">
+            Visit CMU.edu
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <!-- Background image (CSS gradient fallback styled like a campus photo) -->
+    <div class="absolute inset-0"
+         style="background: linear-gradient(160deg, #1a1a2e 0%, #2d0a14 40%, #63666A 100%);">
+      <!-- Decorative geometric shapes -->
+      <div class="absolute top-20 right-20 w-64 h-64 rounded-full opacity-10 bg-cmu-red blur-3xl"></div>
+      <div class="absolute bottom-32 left-10 w-48 h-48 rounded-full opacity-10 bg-white blur-2xl"></div>
+    </div>
+
+    <div class="relative z-10 max-w-5xl mx-auto px-4 text-center text-white pt-20">
+      <!-- Eyebrow -->
+      <span class="inline-block px-3 py-1 text-xs font-semibold tracking-widest uppercase bg-cmu-red rounded-full mb-6">
+        Est. 1900 · Pittsburgh, PA
+      </span>
+
+      <!-- Headline -->
+      <h1 class="font-serif text-5xl sm:text-6xl lg:text-7xl font-semibold leading-tight mb-6">
+        My Heart Is In<br/>
+        <span class="text-red-400">The Work</span>
+      </h1>
+
+      <p class="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Carnegie Mellon University is a global research university renowned for cutting-edge innovation,
+        world-class arts, and a culture that relentlessly pursues the possible.
+      </p>
+
+      <!-- CTA buttons -->
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="#about" class="px-7 py-3 bg-cmu-red hover:bg-cmu-darkred text-white font-medium rounded-lg transition-colors shadow-lg">
+          Discover CMU
+        </a>
+        <a href="#programs" class="px-7 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg border border-white/30 transition-colors backdrop-blur-sm">
+          Explore Programs
+        </a>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="mt-20 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div class="text-3xl font-bold text-red-300">15,000+</div>
+          <div class="text-xs text-gray-300 mt-1 uppercase tracking-wide">Students</div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div class="text-3xl font-bold text-red-300">7</div>
+          <div class="text-xs text-gray-300 mt-1 uppercase tracking-wide">Colleges</div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div class="text-3xl font-bold text-red-300">$800M+</div>
+          <div class="text-xs text-gray-300 mt-1 uppercase tracking-wide">Research Expenditure</div>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div class="text-3xl font-bold text-red-300">120+</div>
+          <div class="text-xs text-gray-300 mt-1 uppercase tracking-wide">Countries Represented</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll indicator -->
+    <a href="#about" class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition-colors animate-bounce">
+      <i class="fa-solid fa-chevron-down text-xl"></i>
+    </a>
+  </section>
+
+  <!-- ===== ABOUT ===== -->
+  <section id="about" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Section header -->
+      <div class="reveal text-center mb-16">
+        <span class="text-cmu-red text-sm font-semibold uppercase tracking-widest">Who We Are</span>
+        <h2 class="font-serif text-4xl sm:text-5xl font-semibold text-gray-900 mt-2">About Carnegie Mellon</h2>
+        <div class="mt-4 mx-auto w-16 h-1 bg-cmu-red rounded"></div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-14 items-center">
+
+        <!-- Text -->
+        <div class="reveal space-y-6 text-gray-700 leading-relaxed">
+          <p class="text-lg">
+            Founded in 1900 by industrialist and philanthropist <strong class="text-gray-900">Andrew Carnegie</strong>,
+            Carnegie Mellon University began as the Carnegie Technical Schools — a place where working-class
+            Pittsburghers could gain practical skills for the steel age. Today it stands as one of the world's
+            premier research universities.
+          </p>
+          <p>
+            CMU's unique interdisciplinary culture fuses technology, science, business, public policy, the
+            humanities, and the fine arts. The result is an environment where <strong>creative problem-solvers</strong>
+            — engineers who compose, artists who code, scientists who lead — thrive together.
+          </p>
+          <p>
+            With campuses and research facilities in <strong>Pittsburgh, Silicon Valley, Qatar, Rwanda,</strong>
+            and more than a dozen other locations around the globe, CMU's reach is truly worldwide.
+          </p>
+
+          <!-- Highlights list -->
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>Ranked top-5 in Computer Science</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>#1 Drama school in the U.S.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>Birthplace of AI research</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>20 Nobel Prize winners</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>143 Tepper MBA alumni companies</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-cmu-red mt-0.5 flex-shrink-0"></i>
+              <span>2,500+ research projects annually</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Visual card stack -->
+        <div class="reveal grid grid-cols-2 gap-4">
+          <div class="card-lift bg-cmu-lightgray rounded-2xl p-6 text-center shadow-sm">
+            <i class="fa-solid fa-building-columns text-4xl text-cmu-red mb-3"></i>
+            <div class="font-semibold text-gray-900">Historic Campus</div>
+            <p class="text-sm text-gray-500 mt-1">158-acre main campus in the Oakland neighborhood of Pittsburgh</p>
+          </div>
+          <div class="card-lift bg-cmu-red rounded-2xl p-6 text-center shadow-sm text-white">
+            <i class="fa-solid fa-lightbulb text-4xl text-red-200 mb-3"></i>
+            <div class="font-semibold">Innovation Hub</div>
+            <p class="text-sm text-red-100 mt-1">Center for Innovation & Entrepreneurship connects students to startup ecosystems</p>
+          </div>
+          <div class="card-lift bg-gray-800 rounded-2xl p-6 text-center shadow-sm text-white col-span-2">
+            <i class="fa-solid fa-quote-left text-2xl text-cmu-red mb-3"></i>
+            <blockquote class="font-serif text-lg italic text-gray-200 leading-relaxed">
+              "My heart is in the work."
+            </blockquote>
+            <cite class="text-sm text-gray-400 mt-2 block">— Andrew Carnegie, Founder</cite>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROGRAMS ===== -->
+  <section id="programs" class="py-24 bg-cmu-lightgray">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="reveal text-center mb-16">
+        <span class="text-cmu-red text-sm font-semibold uppercase tracking-widest">Academics</span>
+        <h2 class="font-serif text-4xl sm:text-5xl font-semibold text-gray-900 mt-2">Programs & Colleges</h2>
+        <div class="mt-4 mx-auto w-16 h-1 bg-cmu-red rounded"></div>
+        <p class="mt-5 text-gray-600 max-w-2xl mx-auto">
+          Explore CMU's seven distinct colleges — each a leader in its field, and all woven together by a shared
+          commitment to interdisciplinary thinking.
+        </p>
+      </div>
+
+      <!-- College cards grid -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+        <!-- SCS -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-microchip text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">School of Computer Science</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Consistently ranked #1 in the U.S. SCS pioneered AI, robotics, and human-computer interaction. Home to the LTI, RI, and Machine Learning departments.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">AI & ML</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Robotics</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Cybersecurity</span>
+          </div>
+        </div>
+
+        <!-- Engineering -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-gears text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">College of Engineering</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Offers rigorous programs in civil, electrical, chemical, and biomedical engineering. Known for close industry ties and hands-on project culture.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Biomedical</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Electrical</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Civil</span>
+          </div>
+        </div>
+
+        <!-- Tepper -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-chart-line text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Tepper School of Business</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Ranked among the global elite for MBA and Ph.D. programs. Tepper students leverage data science and analytics in every business discipline.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">MBA</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Finance</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Analytics</span>
+          </div>
+        </div>
+
+        <!-- CFA -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-masks-theater text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">College of Fine Arts</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Home to the #1-ranked Drama department (U.S.) and acclaimed programs in architecture, art, design, and music.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Drama</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Architecture</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Design</span>
+          </div>
+        </div>
+
+        <!-- MCS -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-atom text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Mellon College of Science</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Exceptional departments in biology, chemistry, mathematics, and physics — bridging fundamental science with applied technology.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Physics</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Chemistry</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Math</span>
+          </div>
+        </div>
+
+        <!-- Heinz -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-landmark text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Heinz College</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            World-leading school of public policy and information systems. Produces leaders in healthcare, cybersecurity policy, and smart cities.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Public Policy</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Info Systems</span>
+          </div>
+        </div>
+
+        <!-- Dietrich -->
+        <div class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <i class="fa-solid fa-book-open text-cmu-red text-xl"></i>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Dietrich College</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Humanities, social sciences, and behavioral economics. Dietrich programs integrate data-driven methods with classic liberal arts thinking.
+          </p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Psychology</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">Economics</span>
+            <span class="px-2 py-0.5 text-xs bg-red-50 text-cmu-red rounded-full">History</span>
+          </div>
+        </div>
+
+        <!-- Interdisciplinary CTA -->
+        <div class="reveal card-lift bg-cmu-red rounded-2xl p-6 shadow-sm text-white flex flex-col justify-between">
+          <div>
+            <i class="fa-solid fa-diagram-project text-3xl text-red-200 mb-4"></i>
+            <h3 class="font-semibold text-lg mb-2">Interdisciplinary Degrees</h3>
+            <p class="text-sm text-red-100 leading-relaxed">
+              Combine programs across colleges — e.g., CS + Art, Engineering + Policy — through CMU's unique flexible degree pathways.
+            </p>
+          </div>
+          <a href="https://www.cmu.edu/academics/" target="_blank" rel="noopener"
+             class="mt-6 inline-block text-sm font-semibold text-white underline underline-offset-2 hover:text-red-200 transition-colors">
+            Browse all programs →
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CAMPUS LIFE ===== -->
+  <section id="campus" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="reveal text-center mb-16">
+        <span class="text-cmu-red text-sm font-semibold uppercase tracking-widest">Student Experience</span>
+        <h2 class="font-serif text-4xl sm:text-5xl font-semibold text-gray-900 mt-2">Campus Life</h2>
+        <div class="mt-4 mx-auto w-16 h-1 bg-cmu-red rounded"></div>
+        <p class="mt-5 text-gray-600 max-w-2xl mx-auto">
+          Life at CMU extends far beyond the classroom. From hackathons to improv shows, robotics demos to
+          cultural festivals — the Pittsburgh campus buzzes with energy year-round.
+        </p>
+      </div>
+
+      <!-- Feature grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-cmu-red"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-people-group text-cmu-red"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">500+ Student Orgs</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              From academic clubs and cultural groups to the award-winning <em>The Tartan</em> newspaper and
+              the famous "Booth" competition during Spring Carnival — there's a community for everyone.
+            </p>
+          </div>
+        </div>
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-gray-800"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-robot text-gray-700"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">Research Opportunities</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              Undergraduates regularly publish research papers, contribute to national labs, and work alongside
+              Nobel laureates through CMU's SURA and SURF programs.
+            </p>
+          </div>
+        </div>
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-cmu-gray"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-city text-cmu-gray"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">Pittsburgh — A Living Lab</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              Pittsburgh itself is a classroom. Once a steel city, it's now a model for tech-driven urban
+              revival. CMU's proximity to Schenley Park and the Strip District adds vibrancy to student life.
+            </p>
+          </div>
+        </div>
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-cmu-red"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-trophy text-cmu-red"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">Athletics & Recreation</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              The Tartans compete in NCAA Division III across 17 varsity sports. The Cohon University Center
+              offers Olympic pools, climbing walls, and fitness studios for all students.
+            </p>
+          </div>
+        </div>
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-cmu-red"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-palette text-cmu-red"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">Arts & Culture</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              Performances by the School of Drama and music ensembles, gallery shows by the College of Fine
+              Arts, and public art installations dot the campus all year.
+            </p>
+          </div>
+        </div>
+
+        <div class="reveal card-lift border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+          <div class="h-3 bg-gray-800"></div>
+          <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-globe text-gray-700"></i>
+              </div>
+              <h3 class="font-semibold text-gray-900">Global Community</h3>
+            </div>
+            <p class="text-sm text-gray-500 leading-relaxed">
+              Students from 120+ countries bring a unique global perspective. International cultural festivals,
+              language exchanges, and global study-abroad programs enrich campus every semester.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campus traditions banner -->
+      <div class="reveal bg-cmu-lightgray rounded-3xl p-8 sm:p-12">
+        <h3 class="font-serif text-2xl font-semibold text-gray-900 mb-6 text-center">Beloved CMU Traditions</h3>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="text-center">
+            <div class="text-4xl mb-2">🎪</div>
+            <div class="font-semibold text-gray-900 text-sm">Spring Carnival</div>
+            <p class="text-xs text-gray-500 mt-1">Annual festival with the famous "Booth" building competition and Buggy races</p>
+          </div>
+          <div class="text-center">
+            <div class="text-4xl mb-2">🐛</div>
+            <div class="font-semibold text-gray-900 text-sm">Buggy (Sweepstakes)</div>
+            <p class="text-xs text-gray-500 mt-1">Student-built human-powered vehicles race around campus every April</p>
+          </div>
+          <div class="text-center">
+            <div class="text-4xl mb-2">🎓</div>
+            <div class="font-semibold text-gray-900 text-sm">Fence Painting</div>
+            <p class="text-xs text-gray-500 mt-1">The iconic CMU fence, painted only at night, serves as a public canvas since 1993</p>
+          </div>
+          <div class="text-center">
+            <div class="text-4xl mb-2">🌟</div>
+            <div class="font-semibold text-gray-900 text-sm">Scotch'n'Soda</div>
+            <p class="text-xs text-gray-500 mt-1">The nation's oldest student-run musical theater organization, founded in 1919</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== NEWS ===== -->
+  <section id="news" class="py-24 bg-cmu-lightgray">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="reveal text-center mb-16">
+        <span class="text-cmu-red text-sm font-semibold uppercase tracking-widest">Latest Updates</span>
+        <h2 class="font-serif text-4xl sm:text-5xl font-semibold text-gray-900 mt-2">News & Highlights</h2>
+        <div class="mt-4 mx-auto w-16 h-1 bg-cmu-red rounded"></div>
+      </div>
+
+      <!-- News grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Featured article (spans 2 cols on lg) -->
+        <article class="reveal card-lift bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 lg:col-span-2">
+          <div class="bg-gradient-to-r from-cmu-red to-red-700 h-48 flex items-center justify-center p-8">
+            <i class="fa-solid fa-brain text-white/30 text-9xl"></i>
+          </div>
+          <div class="p-7">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-cmu-red rounded-full uppercase tracking-wide">Featured</span>
+              <span class="text-xs text-gray-400">March 2026</span>
+            </div>
+            <h3 class="font-serif text-2xl font-semibold text-gray-900 mb-3">
+              CMU Researchers Unveil Breakthrough in Multimodal AI Reasoning
+            </h3>
+            <p class="text-gray-600 text-sm leading-relaxed mb-4">
+              A team from the School of Computer Science's Language Technologies Institute has published
+              landmark findings showing that combining visual, textual, and structured data inputs dramatically
+              improves model reasoning — opening new frontiers in healthcare diagnostics and autonomous systems.
+            </p>
+            <div class="flex items-center gap-3 text-sm text-gray-500">
+              <i class="fa-regular fa-user text-cmu-red"></i>
+              <span>LTI Research Team</span>
+              <span class="mx-2">·</span>
+              <i class="fa-regular fa-clock text-cmu-red"></i>
+              <span>5 min read</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Side articles -->
+        <div class="reveal flex flex-col gap-8">
+
+          <article class="card-lift bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+            <div class="bg-gray-800 h-28 flex items-center justify-center">
+              <i class="fa-solid fa-rocket text-white/20 text-6xl"></i>
+            </div>
+            <div class="p-5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full uppercase tracking-wide">Entrepreneurship</span>
+                <span class="text-xs text-gray-400">Feb 2026</span>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-2">CMU Startup Raises $50M for Sustainable Battery Tech</h3>
+              <p class="text-sm text-gray-500 leading-relaxed">
+                A CMU spinoff founded by ECE alumni secured Series B funding for solid-state battery technology
+                aimed at revolutionizing electric vehicle range.
+              </p>
+            </div>
+          </article>
+
+          <article class="card-lift bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+            <div class="bg-gradient-to-r from-cmu-gray to-gray-500 h-28 flex items-center justify-center">
+              <i class="fa-solid fa-globe text-white/20 text-6xl"></i>
+            </div>
+            <div class="p-5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full uppercase tracking-wide">Global</span>
+                <span class="text-xs text-gray-400">Jan 2026</span>
+              </div>
+              <h3 class="font-semibold text-gray-900 mb-2">New CMU Africa Campus Expands with Engineering Hub</h3>
+              <p class="text-sm text-gray-500 leading-relaxed">
+                CMU-Africa in Kigali, Rwanda opens a new engineering research facility, expanding MSIT and
+                biomedical engineering offerings for African students.
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <!-- More news cards -->
+        <article class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2 py-0.5 text-xs bg-red-100 text-cmu-red rounded-full uppercase tracking-wide">Awards</span>
+            <span class="text-xs text-gray-400">Dec 2025</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Tepper Faculty Wins Nobel Prize in Economics</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            Prof. Helena Marsh of the Tepper School of Business is awarded the Nobel Memorial Prize for her
+            work on behavioral mechanism design and market equilibria.
+          </p>
+          <div class="mt-4 flex items-center gap-2 text-xs text-gray-400">
+            <i class="fa-regular fa-clock"></i><span>3 min read</span>
+          </div>
+        </article>
+
+        <article class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full uppercase tracking-wide">Campus</span>
+            <span class="text-xs text-gray-400">Nov 2025</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">New Wellness Center Opens on Main Campus</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            CMU's 40,000 sq. ft. Wellness & Counseling Center — featuring mindfulness studios, peer support
+            rooms, and telehealth suites — officially opens to all students and staff.
+          </p>
+          <div class="mt-4 flex items-center gap-2 text-xs text-gray-400">
+            <i class="fa-regular fa-clock"></i><span>2 min read</span>
+          </div>
+        </article>
+
+        <article class="reveal card-lift bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="px-2 py-0.5 text-xs bg-red-100 text-cmu-red rounded-full uppercase tracking-wide">Research</span>
+            <span class="text-xs text-gray-400">Oct 2025</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Robotics Institute Demos Autonomous Medical Drone Fleet</h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            RI researchers presented a swarm of autonomous drones capable of delivering medical supplies across
+            disaster zones — tested successfully in simulation and rural field trials.
+          </p>
+          <div class="mt-4 flex items-center gap-2 text-xs text-gray-400">
+            <i class="fa-regular fa-clock"></i><span>4 min read</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- Read more button -->
+      <div class="reveal text-center mt-12">
+        <a href="https://www.cmu.edu/news/" target="_blank" rel="noopener"
+           class="inline-block px-8 py-3 bg-cmu-red text-white font-medium rounded-lg hover:bg-cmu-darkred transition-colors shadow-md">
+          Read All CMU News <i class="fa-solid fa-arrow-right ml-2"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="bg-gray-900 text-gray-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+
+        <!-- Brand -->
+        <div class="lg:col-span-1">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-9 h-9 bg-cmu-red rounded flex items-center justify-center">
+              <span class="text-white font-bold text-sm">CMU</span>
+            </div>
+            <span class="font-semibold text-white">Carnegie Mellon</span>
+          </div>
+          <p class="text-sm text-gray-400 leading-relaxed">
+            Carnegie Mellon University<br/>
+            5000 Forbes Avenue<br/>
+            Pittsburgh, PA 15213, USA
+          </p>
+          <!-- Social icons -->
+          <div class="flex gap-3 mt-5">
+            <a href="https://twitter.com/CarnegieMellon" target="_blank" rel="noopener"
+               class="w-8 h-8 bg-gray-700 hover:bg-cmu-red rounded-full flex items-center justify-center transition-colors">
+              <i class="fa-brands fa-x-twitter text-xs"></i>
+            </a>
+            <a href="https://www.facebook.com/carnegiemellonuniversity" target="_blank" rel="noopener"
+               class="w-8 h-8 bg-gray-700 hover:bg-cmu-red rounded-full flex items-center justify-center transition-colors">
+              <i class="fa-brands fa-facebook-f text-xs"></i>
+            </a>
+            <a href="https://www.instagram.com/carnegiemellon/" target="_blank" rel="noopener"
+               class="w-8 h-8 bg-gray-700 hover:bg-cmu-red rounded-full flex items-center justify-center transition-colors">
+              <i class="fa-brands fa-instagram text-xs"></i>
+            </a>
+            <a href="https://www.youtube.com/user/carnegiemellonu" target="_blank" rel="noopener"
+               class="w-8 h-8 bg-gray-700 hover:bg-cmu-red rounded-full flex items-center justify-center transition-colors">
+              <i class="fa-brands fa-youtube text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Academics -->
+        <div>
+          <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Academics</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#programs" class="hover:text-white hover:underline transition-colors">Programs & Degrees</a></li>
+            <li><a href="https://www.cmu.edu/academics/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Undergraduate Admissions</a></li>
+            <li><a href="https://www.cmu.edu/graduate-admissions/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Graduate Admissions</a></li>
+            <li><a href="https://www.cmu.edu/research/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Research Centers</a></li>
+          </ul>
+        </div>
+
+        <!-- Campus -->
+        <div>
+          <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Campus</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#campus" class="hover:text-white hover:underline transition-colors">Student Life</a></li>
+            <li><a href="https://athletics.cmu.edu/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Athletics</a></li>
+            <li><a href="https://www.cmu.edu/housing/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Housing & Dining</a></li>
+            <li><a href="https://www.cmu.edu/health-services/" target="_blank" rel="noopener" class="hover:text-white hover:underline transition-colors">Health Services</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact -->
+        <div>
+          <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Connect</h4>
+          <ul class="space-y-2 text-sm">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-phone text-cmu-red mt-0.5 w-4 flex-shrink-0"></i>
+              <span>+1 (412) 268-2000</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-envelope text-cmu-red mt-0.5 w-4 flex-shrink-0"></i>
+              <a href="mailto:info@cmu.edu" class="hover:text-white transition-colors">info@cmu.edu</a>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-globe text-cmu-red mt-0.5 w-4 flex-shrink-0"></i>
+              <a href="https://www.cmu.edu" target="_blank" rel="noopener" class="hover:text-white transition-colors">www.cmu.edu</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="border-t border-gray-700 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+        <p>© 2026 Carnegie Mellon University. All rights reserved.</p>
+        <div class="flex gap-4">
+          <a href="https://www.cmu.edu/legal/" target="_blank" rel="noopener" class="hover:text-gray-300 transition-colors">Legal</a>
+          <a href="https://www.cmu.edu/accessibility/" target="_blank" rel="noopener" class="hover:text-gray-300 transition-colors">Accessibility</a>
+          <a href="https://www.cmu.edu/privacy-notice/" target="_blank" rel="noopener" class="hover:text-gray-300 transition-colors">Privacy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    // ----- Mobile menu toggle -----
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    menuBtn.addEventListener('click', () => {
+      const isHidden = mobileMenu.classList.contains('hidden');
+      mobileMenu.classList.toggle('hidden', !isHidden);
+      menuBtn.querySelector('i').className = isHidden
+        ? 'fa-solid fa-xmark text-lg'
+        : 'fa-solid fa-bars text-lg';
+    });
+
+    function closeMobileMenu() {
+      mobileMenu.classList.add('hidden');
+      menuBtn.querySelector('i').className = 'fa-solid fa-bars text-lg';
+    }
+
+    // ----- Scroll reveal -----
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ----- Active nav link on scroll -----
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + entry.target.id) {
+              link.classList.add('active');
+            }
+          });
+        }
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+
+    sections.forEach(s => navObserver.observe(s));
+
+    // ----- Navbar shadow on scroll -----
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('shadow-md', window.scrollY > 10);
+    });
+  </script>
+
+</body>
+</html>
