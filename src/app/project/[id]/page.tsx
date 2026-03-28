@@ -26,6 +26,8 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [rightPanel, setRightPanel] = useState<RightPanel>("none");
+  const [architectureChatInputPrefill, setArchitectureChatInputPrefill] =
+    useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -176,19 +178,27 @@ export default function ProjectPage() {
     await startBuild();
   }, [startBuild]);
 
-  const openEditArchitecture = useCallback(async () => {
-    if (isBuilding) {
-      if (
-        !window.confirm(
-          "Stop the current build to edit architecture?"
-        )
-      ) {
-        return;
+  const openEditArchitecture = useCallback(
+    async (options?: { inputPrefill?: string | null }) => {
+      if (isBuilding) {
+        if (
+          !window.confirm(
+            "Stop the current build to edit architecture?"
+          )
+        ) {
+          return;
+        }
+        await stopBuildAndSync();
       }
-      await stopBuildAndSync();
-    }
-    setRightPanel("edit");
-  }, [isBuilding, stopBuildAndSync]);
+      setArchitectureChatInputPrefill(options?.inputPrefill ?? null);
+      setRightPanel("edit");
+    },
+    [isBuilding, stopBuildAndSync]
+  );
+
+  const clearArchitectureChatInputPrefill = useCallback(() => {
+    setArchitectureChatInputPrefill(null);
+  }, []);
 
   const handleArchitectureChatSynced = useCallback(
     (payload: {
@@ -242,6 +252,19 @@ export default function ProjectPage() {
       setTitleDraft(project.name);
     }
   }, [project, projectId, titleDraft]);
+
+  const openInVsCode = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/vscode-link`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { vscodeUrl?: string };
+      if (data.vscodeUrl) {
+        window.location.assign(data.vscodeUrl);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [projectId]);
 
   if (loading) {
     return (
@@ -367,13 +390,25 @@ export default function ProjectPage() {
           >
             Build Log
           </button>
+          <button
+            type="button"
+            onClick={() => void openInVsCode()}
+            title={
+              project.outputDir
+                ? `Open ${project.outputDir} in VS Code`
+                : "Open project build folder in VS Code"
+            }
+            className="cursor-pointer rounded border border-border px-2 py-0.5 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+          >
+            Open in VS Code
+          </button>
         </div>
       </header>
 
       {/* Main area */}
       <div className="flex min-h-0 flex-1 items-stretch overflow-hidden">
-        {/* Diagram */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        {/* Diagram + full-area detail overlay */}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           <ArchitectureDiagram
             architecture={project.architecture}
             nodeStatuses={nodeStatuses}
@@ -382,17 +417,21 @@ export default function ProjectPage() {
             isBuilding={isBuilding}
             onEditArchitecture={openEditArchitecture}
           />
+          {selectedNode && (
+            <DetailPanel
+              node={selectedNode}
+              edges={project.architecture.edges}
+              onClose={() => setSelectedNodeId(null)}
+              onUpdateNode={handleUpdateNode}
+              onEditWithAI={(node) => {
+                void openEditArchitecture({
+                  inputPrefill: `Update the "${node.label}" service (id: \`${node.id}\`, type: ${node.type}). `,
+                });
+                setSelectedNodeId(null);
+              }}
+            />
+          )}
         </div>
-
-        {/* Detail panel */}
-        {selectedNode && (
-          <DetailPanel
-            node={selectedNode}
-            edges={project.architecture.edges}
-            onClose={() => setSelectedNodeId(null)}
-            onUpdateNode={handleUpdateNode}
-          />
-        )}
 
         {rightPanel === "build" && (
           <div className="flex min-h-0 min-w-0 w-96 max-w-96 shrink-0 flex-col overflow-hidden self-stretch">
@@ -410,6 +449,8 @@ export default function ProjectPage() {
             <EditArchitectureChat
               projectId={projectId}
               initialMessages={project.architectureChat}
+              inputPrefill={architectureChatInputPrefill}
+              onInputPrefillConsumed={clearArchitectureChatInputPrefill}
               onClose={() => setRightPanel("none")}
               onSynced={handleArchitectureChatSynced}
             />

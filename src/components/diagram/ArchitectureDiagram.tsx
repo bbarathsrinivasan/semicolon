@@ -14,6 +14,7 @@ import "@xyflow/react/dist/style.css";
 
 import { Architecture, ArchNode } from "@/lib/types";
 import { getLayoutedElements } from "@/lib/dagre-layout";
+import SparklesIcon from "@/components/icons/SparklesIcon";
 import ServiceNode from "./ServiceNode";
 import ServiceEdge from "./ServiceEdge";
 
@@ -112,8 +113,9 @@ export default function ArchitectureDiagram({
             type="button"
             onClick={() => void onEditArchitecture?.()}
             disabled={editArchitectureDisabled}
-            className="px-4 py-1.5 bg-surface border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
+            <SparklesIcon className="h-4 w-4 shrink-0 opacity-95" />
             Edit architecture
           </button>
         )}

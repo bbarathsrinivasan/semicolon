@@ -15,6 +15,9 @@ export type ArchitectureChatSyncPayload = {
 interface EditArchitectureChatProps {
   projectId: string;
   initialMessages: ArchitectureChatTurn[] | null;
+  /** When set, replaces the compose box once (e.g. opening from Refine with AI on a node). */
+  inputPrefill: string | null;
+  onInputPrefillConsumed?: () => void;
   onClose: () => void;
   onSynced: (payload: ArchitectureChatSyncPayload) => void;
 }
@@ -29,6 +32,8 @@ function seedMessages(saved: ArchitectureChatTurn[] | null): ArchitectureChatTur
 export default function EditArchitectureChat({
   projectId,
   initialMessages,
+  inputPrefill,
+  onInputPrefillConsumed,
   onClose,
   onSynced,
 }: EditArchitectureChatProps) {
@@ -38,6 +43,15 @@ export default function EditArchitectureChat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!inputPrefill) return;
+    setInput(inputPrefill);
+    const t = window.setTimeout(() => {
+      onInputPrefillConsumed?.();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [inputPrefill, onInputPrefillConsumed]);
 
   useEffect(() => {
     const el = scrollRef.current;

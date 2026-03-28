@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+<h1>Semicolon<span style="color:#6366f1">;</span></h1>
 
-First, run the development server:
+**Architecture native development environment**
+
+*Describe it. Diagram it. Build it.*
+
+</div>
+
+---
+
+Semicolon turns a short product description into a **live architecture diagram**, lets you **edit services and contracts** (or **refine with AI**), then **generates a runnable monorepo** with Claude Code. Everything stays in one UI: spec → diagram → build log → open in VS Code.
+
+### What judges can try
+
+- **Spec → diagram** — Chat-style flow produces typed nodes (API, DB, workers, etc.), edges, and endpoint shapes.
+- **Diagram-first editing** — Click a service: view deployment stage, edit endpoints / dependencies / env / copy, or **Refine with AI** (pre-filled prompt) / **Edit architecture** (full chat).
+- **Build** — Streamed build log, per-service status, interrupt-safe lifecycle; output under `~/semicolon-builds/<projectId>`.
+- **Integrations** — **Open in VS Code** (local `vscode://` folder), SQLite-backed projects, recent list in the sidebar.
+
+### Run locally
 
 ```bash
+# .env.local — ANTHROPIC_API_KEY=... (Claude API + build agent)
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Stack: **Next.js 16**, **React Flow**, **Anthropic / Claude Code**, **better-sqlite3**.
