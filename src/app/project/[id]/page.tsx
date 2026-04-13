@@ -20,6 +20,7 @@ import {
 } from "@/lib/demo-project";
 
 type RightPanel = "none" | "build" | "edit";
+type EditorChoice = "vscode" | "cursor" | "custom";
 
 export default function ProjectPage() {
   const params = useParams();
@@ -39,7 +40,19 @@ export default function ProjectPage() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [syncUi, setSyncUi] = useState<"idle" | "loading" | "synced">("idle");
   const [gitModalOpen, setGitModalOpen] = useState(false);
+  const [editorMenuOpen, setEditorMenuOpen] = useState(false);
+  const [customEditorModalOpen, setCustomEditorModalOpen] = useState(false);
+  const [customEditorTemplate, setCustomEditorTemplate] = useState("");
+  const [isSavingCustomEditor, setIsSavingCustomEditor] = useState(false);
+  const [copyPathUi, setCopyPathUi] = useState<"idle" | "copied" | "error">(
+    "idle"
+  );
+  const [customEditorError, setCustomEditorError] = useState<string | null>(
+    null
+  );
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyPathTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorMenuRef = useRef<HTMLDivElement>(null);
 
   const {
     events,
@@ -281,18 +294,77 @@ export default function ProjectPage() {
     }
   }, [project, projectId, titleDraft]);
 
-  const openInVsCode = useCallback(async () => {
+  const openInEditor = useCallback(async (editor: EditorChoice) => {
     try {
-      const res = await fetch(`/api/projects/${projectId}/vscode-link`);
+      const res = await fetch(
+        `/api/projects/${projectId}/editor-link?editor=${editor}`
+      );
       if (!res.ok) return;
-      const data = (await res.json()) as { vscodeUrl?: string };
-      if (data.vscodeUrl) {
-        window.location.assign(data.vscodeUrl);
+      const data = (await res.json()) as {
+        launchUrl?: string | null;
+        requiresConfiguration?: boolean;
+      };
+      if (data.launchUrl) {
+        window.location.assign(data.launchUrl);
+        return;
+      }
+      if (editor === "custom" && data.requiresConfiguration) {
+        setCustomEditorModalOpen(true);
       }
     } catch {
       /* ignore */
     }
   }, [projectId]);
+
+  const loadCustomEditorTemplate = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings/editor");
+      if (!res.ok) return;
+      const data = (await res.json()) as { customTemplate?: string };
+      setCustomEditorTemplate(data.customTemplate ?? "");
+      setCustomEditorError(null);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const openCustomEditorConfiguration = useCallback(() => {
+    setEditorMenuOpen(false);
+    setCustomEditorModalOpen(true);
+    void loadCustomEditorTemplate();
+  }, [loadCustomEditorTemplate]);
+
+  const saveCustomEditorTemplate = useCallback(async () => {
+    const hasPathToken =
+      customEditorTemplate.includes("{{path}}") ||
+      customEditorTemplate.includes("{path}") ||
+      customEditorTemplate.includes("{{encodedPath}}") ||
+      customEditorTemplate.includes("{encodedPath}");
+    if (!hasPathToken) {
+      setCustomEditorError(
+        "Template must include {path}, {{path}}, {encodedPath}, or {{encodedPath}}."
+      );
+      return;
+    }
+    setIsSavingCustomEditor(true);
+    try {
+      const res = await fetch("/api/settings/editor", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customTemplate: customEditorTemplate }),
+      });
+      if (!res.ok) {
+        setCustomEditorError("Failed to save custom editor template.");
+        return;
+      }
+      setCustomEditorError(null);
+      setCustomEditorModalOpen(false);
+    } catch {
+      setCustomEditorError("Failed to save custom editor template.");
+    } finally {
+      setIsSavingCustomEditor(false);
+    }
+  }, [customEditorTemplate]);
 
   const handleSyncClick = useCallback(() => {
     if (syncUi === "loading") return;
@@ -304,10 +376,48 @@ export default function ProjectPage() {
     }, 1400);
   }, [syncUi]);
 
+  const copyLocalBuildPath = useCallback(async () => {
+    try {
+      let folderPath = project?.outputDir ?? "";
+      if (!folderPath) {
+        const res = await fetch(`/api/projects/${projectId}/editor-link`);
+        if (res.ok) {
+          const data = (await res.json()) as { folderPath?: string };
+          folderPath = data.folderPath ?? "";
+        }
+      }
+      if (!folderPath) {
+        setCopyPathUi("error");
+        return;
+      }
+      await navigator.clipboard.writeText(folderPath);
+      setCopyPathUi("copied");
+    } catch {
+      setCopyPathUi("error");
+    } finally {
+      if (copyPathTimeoutRef.current) clearTimeout(copyPathTimeoutRef.current);
+      copyPathTimeoutRef.current = setTimeout(() => {
+        copyPathTimeoutRef.current = null;
+        setCopyPathUi("idle");
+      }, 1800);
+    }
+  }, [project?.outputDir, projectId]);
+
   useEffect(() => {
     return () => {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      if (copyPathTimeoutRef.current) clearTimeout(copyPathTimeoutRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const onPointerDown = (e: globalThis.MouseEvent) => {
+      if (!editorMenuRef.current?.contains(e.target as Node)) {
+        setEditorMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
   if (loading) {
@@ -439,18 +549,72 @@ export default function ProjectPage() {
           >
             Build Log
           </button>
-          <button
-            type="button"
-            onClick={() => void openInVsCode()}
-            title={
-              project.outputDir
-                ? `Open ${project.outputDir} in VS Code`
-                : "Open project build folder in VS Code"
-            }
-            className="cursor-pointer rounded border border-border px-2 py-0.5 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
-          >
-            Open in VS Code
-          </button>
+          <div ref={editorMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setEditorMenuOpen((prev) => !prev)}
+              title={
+                project.outputDir
+                  ? `Open ${project.outputDir} in an editor`
+                  : "Open project build folder in an editor"
+              }
+              className="inline-flex cursor-pointer items-center gap-1 rounded border border-border px-2 py-0.5 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+            >
+              Open in editor
+              <span aria-hidden>▾</span>
+            </button>
+            {editorMenuOpen ? (
+              <div className="absolute right-0 top-7 z-20 min-w-52 rounded-lg border border-border bg-surface p-1 shadow-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditorMenuOpen(false);
+                    void openInEditor("vscode");
+                  }}
+                  className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Open in VS Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditorMenuOpen(false);
+                    void openInEditor("cursor");
+                  }}
+                  className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Open in Cursor
+                </button>
+                <button
+                  type="button"
+                  onClick={openCustomEditorConfiguration}
+                  className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Configure custom editor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditorMenuOpen(false);
+                    void openInEditor("custom");
+                  }}
+                  className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Open in custom editor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditorMenuOpen(false);
+                    void copyLocalBuildPath();
+                  }}
+                  className="w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-surface-hover"
+                >
+                  Copy local build path
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={handleSyncClick}
@@ -555,6 +719,83 @@ export default function ProjectPage() {
           </div>
         )}
       </div>
+
+      {customEditorModalOpen ? (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
+          role="presentation"
+          onClick={() => {
+            if (isSavingCustomEditor) return;
+            setCustomEditorModalOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="custom-editor-title"
+            className="w-full max-w-xl rounded-2xl border border-border bg-surface shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="border-b border-border px-6 py-4">
+              <h2 id="custom-editor-title" className="text-base font-semibold text-foreground">
+                Configure custom editor
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                Use a URL template with one token: {"{path}"} / {"{{path}}"} for raw path, or {"{encodedPath}"} / {"{{encodedPath}}"} for encoded path.
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <label className="mb-1 block text-xs font-medium text-muted">
+                Launch URL template
+              </label>
+              <input
+                type="text"
+                value={customEditorTemplate}
+                onChange={(e) => setCustomEditorTemplate(e.target.value)}
+                placeholder="myeditor://open?folder={{encodedPath}}"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+              />
+              {customEditorError ? (
+                <p className="mt-2 text-xs text-red-400">{customEditorError}</p>
+              ) : null}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setCustomEditorModalOpen(false)}
+                disabled={isSavingCustomEditor}
+                className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-surface-hover disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveCustomEditorTemplate()}
+                disabled={isSavingCustomEditor}
+                className="cursor-pointer rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait"
+              >
+                {isSavingCustomEditor ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {copyPathUi !== "idle" ? (
+        <div
+          className={`fixed bottom-5 right-5 z-[115] rounded-lg border px-3 py-2 text-xs shadow-xl ${
+            copyPathUi === "copied"
+              ? "border-green-500/30 bg-green-500/10 text-green-300"
+              : "border-red-500/30 bg-red-500/10 text-red-300"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {copyPathUi === "copied"
+            ? "Local build path copied."
+            : "Could not copy build path."}
+        </div>
+      ) : null}
 
       {gitModalOpen ? (
         <div
