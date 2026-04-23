@@ -1,8 +1,9 @@
 <div align="center">
-
-# Semicolon;
-
-![Semicolon Logo](https://img.shields.io/badge/Semicolon-%3B-7C3AED?style=for-the-badge&labelColor=111827)
+<img
+  src="https://img.shields.io/badge/Semicolon-%3B-7C3AED?style=for-the-badge&labelColor=111827"
+  alt="Semicolon Logo"
+  height="56"
+/>
 
 ![Status](https://img.shields.io/badge/Status-MVP%20Build-22C55E?style=flat-square)
 ![Architecture First](https://img.shields.io/badge/Architecture-First-6366F1?style=flat-square)
@@ -64,14 +65,15 @@ flowchart LR
 
 ## Product Comparison 📊
 
-| Capability | Semicolon | Generic Chat + IDE | Diagram Tool + Manual Build |
+| Capability | Semicolon | Superset | Claude Code |
 |---|---|---|---|
-| Architecture as first-class model | ✅ | ❌ | ✅ |
-| Architecture drives code generation | ✅ | ❌ | ❌ |
-| Service-level build progress | ✅ | ❌ | ❌ |
-| Persisted project memory | ✅ | Partial | Partial |
-| One flow: prompt -> graph -> build | ✅ | ❌ | ❌ |
-| Multi-agent orchestration ready | ✅ | ❌ | ❌ |
+| System model | ✓ | ✗ | ✗ |
+| Cross-svc contracts | ✓ | ✗ | ✗ |
+| Bidirectional sync | ✓ | ✗ | ✗ |
+| Agent agnostic | ✓ | ✓ | ✗ |
+| Deploy sequencing | ✓ | ✗ | ✗ |
+| Persistent memory | ✓ | ✗ | ✗ |
+| Works on existing roadmap | ✓ | ✓ | ✗ |
 
 ## Why This Is Better ✅
 
