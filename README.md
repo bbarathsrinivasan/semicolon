@@ -2,6 +2,13 @@
 
 # Semicolon;
 
+![Semicolon Logo](https://img.shields.io/badge/Semicolon-%3B-7C3AED?style=for-the-badge&labelColor=111827)
+
+![Status](https://img.shields.io/badge/Status-MVP%20Build-22C55E?style=flat-square)
+![Architecture First](https://img.shields.io/badge/Architecture-First-6366F1?style=flat-square)
+![Multi-Agent](https://img.shields.io/badge/Multi--Agent-Roadmap-F59E0B?style=flat-square)
+![Stack](https://img.shields.io/badge/Next.js-React%20Flow%20SQLite-0EA5E9?style=flat-square)
+
 **Most AI tools help you generate files. Semicolon keeps your system model and code in sync.**
 
 *Describe it once -> get a diagram -> build runnable code from the same source of truth.*
@@ -10,11 +17,11 @@
 
 ---
 
-## What It Is (One Sentence)
+## What It Is (One Sentence) 🎯
 
 Semicolon is an architecture-aware build workspace that turns a plain-language system description into an editable service graph and then generates working code from that graph.
 
-## Why This Exists
+## Why This Exists 🧩
 
 Most AI coding workflows break into disconnected artifacts:
 
@@ -25,7 +32,7 @@ Most AI coding workflows break into disconnected artifacts:
 
 Those artifacts drift fast. Semicolon treats architecture as a living model, then uses it to drive generation.
 
-## Demo Flow (30 seconds)
+## Demo Flow (30 seconds) ⚡
 
 1. **Prompt** your system idea.
 2. **Diagram** generated services, dependencies, and contracts.
@@ -33,13 +40,13 @@ Those artifacts drift fast. Semicolon treats architecture as a living model, the
 4. **Build** with coding agents into a runnable repo.
 5. **Inspect** logs and service status in one place.
 
-## The Three Core Jobs
+## The Three Core Jobs 🛠️
 
 - **Model**: Convert intent into a concrete system graph.
 - **Build**: Use coding agents to create runnable services from that graph.
 - **Sync**: Keep project state, architecture, and build output traceable.
 
-## How Semicolon Works
+## How Semicolon Works 🗺️
 
 ```mermaid
 flowchart LR
@@ -55,7 +62,7 @@ flowchart LR
   L --> S
 ```
 
-## Product Comparison
+## Product Comparison 📊
 
 | Capability | Semicolon | Generic Chat + IDE | Diagram Tool + Manual Build |
 |---|---|---|---|
@@ -64,16 +71,16 @@ flowchart LR
 | Service-level build progress | ✅ | ❌ | ❌ |
 | Persisted project memory | ✅ | Partial | Partial |
 | One flow: prompt -> graph -> build | ✅ | ❌ | ❌ |
-| Multi-agent orchestration ready | 🚧 | ❌ | ❌ |
+| Multi-agent orchestration ready | ✅ | ❌ | ❌ |
 
-## Why This Is Better
+## Why This Is Better ✅
 
 - **System-aware, not file-aware**: decisions happen at service/contract level before code.
 - **Less architecture drift**: one graph is reused for edits and generation.
 - **Faster iteration**: change architecture, then regenerate intentionally.
 - **Observable generation**: streamed events, build logs, and service state tracking.
 
-## Current Capabilities
+## Current Capabilities 🚀
 
 - Prompt-to-architecture generation
 - Interactive graph visualization and node detail editing
@@ -82,7 +89,7 @@ flowchart LR
 - Build logs and service-status tracking
 - Local project persistence via SQLite
 
-## Agent Compatibility
+## Agent Compatibility 🤖
 
 Current implementation uses Anthropic SDK + Claude Agent SDK.
 
@@ -92,7 +99,7 @@ Planned direction:
 - per-project agent selection
 - per-service mixed-agent builds (future)
 
-## Quick Start
+## Quick Start 🏁
 
 ```bash
 # required in .env.local
@@ -104,7 +111,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Tech Stack
+## Tech Stack 🧱
 
 - **Frontend**: Next.js (App Router), React, Tailwind
 - **Diagram**: React Flow + Dagre layout
@@ -113,7 +120,14 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Storage**: SQLite via `better-sqlite3`
 - **Output**: local generated repos in `~/semicolon-builds/<projectId>`
 
-## MVP Direction
+## Visual Identity
+
+- Primary accent: `#7C3AED` (Semicolon purple)
+- Success: `#22C55E`
+- Warning/roadmap: `#F59E0B`
+- Info: `#0EA5E9`
+
+## MVP Direction 🧪
 
 Functionality-first roadmap focuses on:
 
