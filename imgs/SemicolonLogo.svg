@@ -10,6 +10,15 @@
     </linearGradient>
   </defs>
   <rect x="8" y="8" width="944" height="224" rx="28" fill="url(#bg)" stroke="#374151" stroke-width="2"/>
-  <text x="64" y="150" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="104" font-weight="700" fill="#f9fafb">Semicolon</text>
-  <text x="610" y="150" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="120" font-weight="800" fill="url(#accent)">;</text>
+  <text
+    x="480"
+    y="150"
+    text-anchor="middle"
+    font-family="Inter, Segoe UI, Arial, sans-serif"
+    font-size="104"
+    font-weight="700"
+  >
+    <tspan fill="#f9fafb">Semicolon</tspan>
+    <tspan dx="12" fill="url(#accent)" font-size="120" font-weight="800">;</tspan>
+  </text>
 </svg>
