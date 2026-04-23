@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { generateClarifyQuestions } from "@/lib/claude";
+import { requireSessionUser } from "@/lib/require-session";
 
 export async function POST(request: Request) {
+  const session = requireSessionUser(request);
+  if (session instanceof NextResponse) return session;
+  void session;
+
   try {
     const { prompt } = await request.json();
 

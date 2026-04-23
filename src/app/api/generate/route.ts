@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { generateArchitecture } from "@/lib/claude";
-import { updateProject } from "@/lib/db";
+import { getProject, updateProject } from "@/lib/db";
 import { ProjectSpec } from "@/lib/types";
+import { requireSessionUser } from "@/lib/require-session";
 
 export async function POST(request: Request) {
+  const userOrRes = requireSessionUser(request);
+  if (userOrRes instanceof NextResponse) return userOrRes;
+
   try {
     const { projectId, spec } = (await request.json()) as {
       projectId: string;
@@ -15,6 +19,11 @@ export async function POST(request: Request) {
         { error: "projectId and spec are required" },
         { status: 400 }
       );
+    }
+
+    const project = getProject(projectId);
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     const architecture = await generateArchitecture(spec);

@@ -145,6 +145,7 @@ This document converts `feature.md` into an execution-ready roadmap with impleme
 ## Phase 5: Multi-Agent Orchestration (Phase 1)
 
 ### 5.1 Provider abstraction for coding agents
+- **Status:** Implemented
 - **Implementation**
   - Create provider interface (`prepare`, `run`, `streamEvents`, `cancel`, `healthCheck`).
   - Add adapters for initial providers.
@@ -152,6 +153,7 @@ This document converts `feature.md` into an execution-ready roadmap with impleme
 - **Dependencies:** 1.1
 
 ### 5.2 Per-project/provider selection in settings/build options
+- **Status:** Implemented
 - **Implementation**
   - Add provider config model with default provider resolution rules.
   - Provide run-time override in build modal.
@@ -177,6 +179,7 @@ This document converts `feature.md` into an execution-ready roadmap with impleme
 ## Phase 6: Authentication and Agent Onboarding
 
 ### 6.1 User login/signup flows
+- **Status:** Implemented
 - **Implementation**
   - Build auth endpoints, session cookies/tokens, and secure password flow.
   - Add basic account settings and session revocation.
@@ -184,6 +187,7 @@ This document converts `feature.md` into an execution-ready roadmap with impleme
 - **Dependencies:** none (but should align with provider credential model)
 
 ### 6.2 Guided onboarding after signup for agent account connection
+- **Status:** Partial (default coding agent preference in sidebar; full wizard deferred)
 - **Implementation**
   - Implement onboarding wizard with provider selection and connection checks.
   - Offer skip/resume behavior.

@@ -3,6 +3,7 @@ import {
   getStoredBuildInstructions,
   setBuildInstructionsMarkdown,
 } from "@/lib/db";
+import { requireSessionUser } from "@/lib/require-session";
 import { DEFAULT_BUILD_INSTRUCTIONS_MARKDOWN } from "@/lib/build-instructions-default";
 
 export async function GET() {
@@ -13,6 +14,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const userOrRes = requireSessionUser(request);
+  if (userOrRes instanceof NextResponse) return userOrRes;
+
   try {
     const body = (await request.json()) as { markdown?: unknown };
     if (typeof body.markdown !== "string") {

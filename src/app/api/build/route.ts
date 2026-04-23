@@ -4,14 +4,35 @@ import {
   appendBuildLog,
   updateNodeStatus,
 } from "@/lib/db";
-import { runBuild, getOutputDir } from "@/lib/claude-code";
 import { interruptBuildSession } from "@/lib/build-interrupt";
 import { BuildEvent } from "@/lib/types";
+import {
+  getBuildProvider,
+  resolveBuildProviderId,
+} from "@/lib/build-providers";
+import type { BuildProviderId } from "@/lib/build-providers/types";
+import { requireSessionUser } from "@/lib/require-session";
+import { NextResponse } from "next/server";
+import { assertBuildProviderAuthenticated } from "@/lib/build-provider-auth";
 
 export const maxDuration = 300; // 5 minute timeout for build
 
 export async function POST(request: Request) {
-  const { projectId } = await request.json();
+  const userOrRes = requireSessionUser(request);
+  if (userOrRes instanceof NextResponse) return userOrRes;
+
+  const body = (await request.json()) as {
+    projectId?: string;
+    buildProvider?: unknown;
+  };
+  const rawProjectId = body.projectId;
+  if (typeof rawProjectId !== "string" || !rawProjectId) {
+    return new Response(JSON.stringify({ error: "projectId required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const projectId = rawProjectId;
 
   const project = getProject(projectId);
   if (!project) {
@@ -21,6 +42,29 @@ export async function POST(request: Request) {
     });
   }
 
+  const requested =
+    typeof body.buildProvider === "string"
+      ? resolveBuildProviderId(body.buildProvider)
+      : resolveBuildProviderId(project.buildProvider);
+  const providerId: BuildProviderId = requested;
+
+  if (providerId !== project.buildProvider) {
+    updateProject(projectId, { buildProvider: providerId });
+  }
+  const provider = getBuildProvider(providerId);
+
+  const authGate = await assertBuildProviderAuthenticated(providerId);
+  if (!authGate.ok) {
+    return NextResponse.json(
+      {
+        error: "Coding agent is not connected on this machine.",
+        provider: providerId,
+        auth: authGate.snapshot,
+      },
+      { status: 403 }
+    );
+  }
+
   if (!project.architecture) {
     return new Response(
       JSON.stringify({ error: "No architecture generated yet" }),
@@ -28,7 +72,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const outputDir = getOutputDir(projectId);
+  const outputDir = provider.getOutputDir(projectId);
   updateProject(projectId, { status: "building", outputDir });
 
   const encoder = new TextEncoder();
@@ -53,7 +97,14 @@ export async function POST(request: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runBuild(
+        controller.enqueue(
+          sseEvent({
+            type: "progress",
+            text: `Starting build with ${providerId}…`,
+          })
+        );
+
+        for await (const event of provider.runBuild(
           project,
           outputDir,
           request.signal
@@ -125,8 +176,9 @@ export async function POST(request: Request) {
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
     },
   });
 }

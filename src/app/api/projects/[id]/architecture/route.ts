@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProject, updateProject } from "@/lib/db";
+import { requireSessionUser } from "@/lib/require-session";
 import { reviseArchitecture } from "@/lib/claude";
 import { Architecture, ArchitectureChatTurn } from "@/lib/types";
 
@@ -10,6 +11,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userOrRes = requireSessionUser(request);
+  if (userOrRes instanceof NextResponse) return userOrRes;
+
   const { id } = await params;
   const project = getProject(id);
   if (!project) {

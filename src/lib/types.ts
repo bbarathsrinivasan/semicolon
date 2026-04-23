@@ -1,3 +1,5 @@
+import type { BuildProviderId } from "@/lib/build-providers/types";
+
 export interface ProjectSpec {
   prompt: string;
   preferences: Record<string, string>;
@@ -64,6 +66,7 @@ export interface Project {
   name: string;
   spec: ProjectSpec | null;
   architecture: Architecture | null;
+  buildProvider: BuildProviderId;
   status: ProjectStatus;
   buildLog: string;
   outputDir: string | null;

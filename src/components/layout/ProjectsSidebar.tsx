@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { Project } from "@/lib/types";
+import type { BuildProviderId } from "@/lib/build-providers/types";
 import { PROJECTS_CHANGED_EVENT } from "@/lib/sidebar-events";
 import BuildInstructionsPanel from "./BuildInstructionsPanel";
+import ProviderConnectModal, {
+  type ProviderAuthPayload,
+} from "@/components/build/ProviderConnectModal";
 
 const STORAGE_KEY = "semicolon-sidebar-collapsed";
 
@@ -74,15 +78,67 @@ function PanelToggleIcon({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+type MeUser = {
+  id: string;
+  email: string;
+  defaultBuildProvider: BuildProviderId;
+};
+
 export default function ProjectsSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<MeUser | null | undefined>(undefined);
+  const [providerOptions, setProviderOptions] = useState<
+    { id: BuildProviderId; label: string }[]
+  >([]);
+  const [savingAgent, setSavingAgent] = useState(false);
+  const [agentGate, setAgentGate] = useState<{
+    providerId: BuildProviderId;
+    snapshot: ProviderAuthPayload;
+  } | null>(null);
+  const [agentGateVerifying, setAgentGateVerifying] = useState(false);
+
+  const loadMe = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) {
+        setMe(null);
+        return;
+      }
+      const data = (await res.json()) as { user: MeUser | null };
+      setMe(data.user ?? null);
+    } catch {
+      setMe(null);
+    }
+  }, []);
+
+  const loadProviderOptions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/build/providers");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        providers?: { id: BuildProviderId; label: string }[];
+      };
+      if (Array.isArray(data.providers)) setProviderOptions(data.providers);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const loadProjects = useCallback(async () => {
     try {
       const res = await fetch("/api/projects");
+      if (
+        res.status === 401 &&
+        pathname !== "/login" &&
+        pathname !== "/register"
+      ) {
+        window.location.href = "/login";
+        return;
+      }
       if (!res.ok) return;
       const data = (await res.json()) as { projects: Project[] };
       setProjects(data.projects ?? []);
@@ -91,7 +147,7 @@ export default function ProjectsSidebar() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     try {
@@ -116,12 +172,97 @@ export default function ProjectsSidebar() {
   }, [loadProjects, pathname]);
 
   useEffect(() => {
+    void loadMe();
+    void loadProviderOptions();
+  }, [loadMe, loadProviderOptions, pathname]);
+
+  useEffect(() => {
     const onChange = () => {
       void loadProjects();
     };
     window.addEventListener(PROJECTS_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(PROJECTS_CHANGED_EVENT, onChange);
   }, [loadProjects]);
+
+  const persistDefaultAgent = async (providerId: BuildProviderId) => {
+    if (!me) return;
+    const res = await fetch("/api/auth/agent", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ defaultBuildProvider: providerId }),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      auth?: ProviderAuthPayload;
+      provider?: BuildProviderId;
+      user?: MeUser;
+    };
+    if (!res.ok) {
+      if (res.status === 403 && body.auth && body.provider) {
+        setAgentGate({ providerId: body.provider, snapshot: body.auth });
+        return;
+      }
+      throw new Error(body.error ?? "save failed");
+    }
+    if (body.user) setMe(body.user);
+  };
+
+  const handleDefaultAgentChange = async (providerId: BuildProviderId) => {
+    if (!me || savingAgent || providerId === me.defaultBuildProvider) return;
+    setSavingAgent(true);
+    try {
+      const ar = await fetch("/api/build/provider-auth");
+      if (!ar.ok) throw new Error("auth check failed");
+      const aj = (await ar.json()) as {
+        providers: Record<BuildProviderId, ProviderAuthPayload>;
+      };
+      const snap = aj.providers[providerId];
+      if (!snap.ready) {
+        setAgentGate({ providerId, snapshot: snap });
+        return;
+      }
+      await persistDefaultAgent(providerId);
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingAgent(false);
+    }
+  };
+
+  const verifyAgentGateAndSave = async () => {
+    if (!agentGate || !me) return;
+    setAgentGateVerifying(true);
+    try {
+      const ar = await fetch("/api/build/provider-auth");
+      if (!ar.ok) return;
+      const aj = (await ar.json()) as {
+        providers: Record<BuildProviderId, ProviderAuthPayload>;
+      };
+      const snap = aj.providers[agentGate.providerId];
+      if (!snap.ready) {
+        setAgentGate({ ...agentGate, snapshot: snap });
+        return;
+      }
+      await persistDefaultAgent(agentGate.providerId);
+      setAgentGate(null);
+    } catch {
+      /* ignore */
+    } finally {
+      setAgentGateVerifying(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    setMe(null);
+    setProjects([]);
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside
@@ -217,6 +358,80 @@ export default function ProjectsSidebar() {
           </nav>
         </>
       )}
+
+      {!collapsed && me === undefined ? (
+        <div className="shrink-0 border-t border-border px-3 py-2">
+          <p className="text-xs text-muted">Loading account…</p>
+        </div>
+      ) : null}
+
+      {!collapsed && me === null && pathname !== "/login" && pathname !== "/register" ? (
+        <div className="shrink-0 space-y-2 border-t border-border px-3 py-3">
+          <p className="text-xs text-muted leading-relaxed">
+            Sign in to sync projects across sessions.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/login"
+              className="inline-flex flex-1 min-w-[5rem] items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex flex-1 min-w-[5rem] items-center justify-center rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface-hover"
+            >
+              Register
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {!collapsed && me ? (
+        <div className="shrink-0 space-y-2 border-t border-border px-3 py-3">
+          <p className="truncate text-xs text-muted" title={me.email}>
+            {me.email}
+          </p>
+          <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Default coding agent
+          </label>
+          <select
+            value={me.defaultBuildProvider}
+            onChange={(e) =>
+              void handleDefaultAgentChange(e.target.value as BuildProviderId)
+            }
+            disabled={savingAgent || providerOptions.length === 0}
+            className="w-full cursor-pointer rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Default coding agent for new projects"
+          >
+            {providerOptions.length > 0 ? (
+              providerOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))
+            ) : (
+              <option value={me.defaultBuildProvider}>Claude</option>
+            )}
+          </select>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="w-full cursor-pointer rounded-lg border border-border py-1.5 text-xs text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
+
+      <ProviderConnectModal
+        open={agentGate !== null}
+        providerId={agentGate?.providerId ?? null}
+        snapshot={agentGate?.snapshot ?? null}
+        verifying={agentGateVerifying}
+        onClose={() => setAgentGate(null)}
+        onVerify={() => void verifyAgentGateAndSave()}
+      />
 
       <BuildInstructionsPanel collapsed={collapsed} />
     </aside>

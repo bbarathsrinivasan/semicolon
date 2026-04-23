@@ -117,6 +117,11 @@ export default function ChatInterface() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) throw new Error("clarify failed");
       const data = await res.json();
       setQuestions(data.questions);
       setStep("clarify");
@@ -152,14 +157,24 @@ export default function ChatInterface() {
           spec,
         }),
       });
+      if (projectRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!projectRes.ok) throw new Error("create project failed");
       const { project } = await projectRes.json();
 
       // Generate architecture
-      await fetch("/api/generate", {
+      const genRes = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId: project.id, spec }),
       });
+      if (genRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!genRes.ok) throw new Error("generate failed");
 
       window.dispatchEvent(new Event(PROJECTS_CHANGED_EVENT));
       router.push(`/project/${project.id}`);

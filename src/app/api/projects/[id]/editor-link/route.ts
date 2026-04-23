@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProject, getAppSetting } from "@/lib/db";
+import { requireSessionUser } from "@/lib/require-session";
 import { getOutputDir } from "@/lib/claude-code";
 import { buildEditorOpenFolderUrl, EditorKind } from "@/lib/editor-url";
 
@@ -15,6 +16,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userOrRes = requireSessionUser(request);
+  if (userOrRes instanceof NextResponse) return userOrRes;
+
   const { id } = await params;
   const project = getProject(id);
   if (!project) {

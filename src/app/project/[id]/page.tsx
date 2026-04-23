@@ -8,11 +8,19 @@ import {
   Architecture,
   ArchitectureChatTurn,
 } from "@/lib/types";
+import {
+  BuildProviderId,
+  BuildProviderSummary,
+  buildProviderLabel,
+} from "@/lib/build-providers/types";
 import { PROJECTS_CHANGED_EVENT } from "@/lib/sidebar-events";
 import ArchitectureDiagram from "@/components/diagram/ArchitectureDiagram";
 import DetailPanel from "@/components/diagram/DetailPanel";
 import BuildLog from "@/components/build/BuildLog";
 import EditArchitectureChat from "@/components/architecture/EditArchitectureChat";
+import ProviderConnectModal, {
+  type ProviderAuthPayload,
+} from "@/components/build/ProviderConnectModal";
 import { useBuild } from "@/hooks/useBuild";
 import {
   DEMO_ALL_BUILT_PROJECT_ID,
@@ -39,6 +47,15 @@ export default function ProjectPage() {
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [syncUi, setSyncUi] = useState<"idle" | "loading" | "synced">("idle");
+  const [providerOptions, setProviderOptions] = useState<BuildProviderSummary[]>(
+    []
+  );
+  const [savingProvider, setSavingProvider] = useState(false);
+  const [providerGate, setProviderGate] = useState<{
+    providerId: BuildProviderId;
+    snapshot: ProviderAuthPayload;
+  } | null>(null);
+  const [gateVerifying, setGateVerifying] = useState(false);
   const [gitModalOpen, setGitModalOpen] = useState(false);
   const [editorMenuOpen, setEditorMenuOpen] = useState(false);
   const [customEditorModalOpen, setCustomEditorModalOpen] = useState(false);
@@ -92,6 +109,10 @@ export default function ProjectPage() {
     const fetchProject = async () => {
       try {
         const res = await fetch(`/api/projects/${projectId}`);
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
         if (!res.ok) {
           router.push("/new");
           return;
@@ -125,6 +146,21 @@ export default function ProjectPage() {
       clearLiveEvents();
     })();
   }, [complete, refetchProject, clearLiveEvents]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/build/providers");
+        if (!res.ok) return;
+        const data = (await res.json()) as { providers?: BuildProviderSummary[] };
+        if (Array.isArray(data.providers)) {
+          setProviderOptions(data.providers);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!isBuilding) return;
@@ -210,9 +246,87 @@ export default function ProjectPage() {
   );
 
   const handleBuild = useCallback(async () => {
+    if (!project) return;
     setRightPanel("build");
-    await startBuild();
-  }, [startBuild]);
+    await startBuild(project.buildProvider);
+  }, [startBuild, project]);
+
+  const persistBuildProvider = useCallback(
+    async (providerId: BuildProviderId) => {
+      if (!project) return;
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buildProvider: providerId }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        auth?: ProviderAuthPayload;
+        provider?: BuildProviderId;
+        project?: Project;
+      };
+      if (!res.ok) {
+        if (res.status === 403 && body.auth && body.provider) {
+          setProviderGate({
+            providerId: body.provider,
+            snapshot: body.auth,
+          });
+          return;
+        }
+        throw new Error(body.error ?? "save failed");
+      }
+      if (body.project) setProject(body.project);
+    },
+    [project, projectId]
+  );
+
+  const handleProviderChange = useCallback(
+    async (providerId: BuildProviderId) => {
+      if (!project || providerId === project.buildProvider || savingProvider) return;
+      setSavingProvider(true);
+      try {
+        const ar = await fetch("/api/build/provider-auth");
+        if (!ar.ok) throw new Error("auth check failed");
+        const aj = (await ar.json()) as {
+          providers: Record<BuildProviderId, ProviderAuthPayload>;
+        };
+        const snap = aj.providers[providerId];
+        if (!snap.ready) {
+          setProviderGate({ providerId, snapshot: snap });
+          return;
+        }
+        await persistBuildProvider(providerId);
+      } catch {
+        /* ignore */
+      } finally {
+        setSavingProvider(false);
+      }
+    },
+    [project, savingProvider, persistBuildProvider]
+  );
+
+  const verifyProviderGateAndSave = useCallback(async () => {
+    if (!providerGate || !project) return;
+    setGateVerifying(true);
+    try {
+      const ar = await fetch("/api/build/provider-auth");
+      if (!ar.ok) return;
+      const aj = (await ar.json()) as {
+        providers: Record<BuildProviderId, ProviderAuthPayload>;
+      };
+      const snap = aj.providers[providerGate.providerId];
+      if (!snap.ready) {
+        setProviderGate({ ...providerGate, snapshot: snap });
+        return;
+      }
+      await persistBuildProvider(providerGate.providerId);
+      setProviderGate(null);
+    } catch {
+      /* ignore */
+    } finally {
+      setGateVerifying(false);
+    }
+  }, [providerGate, project, persistBuildProvider]);
 
   const openEditArchitecture = useCallback(
     async (options?: {
@@ -525,6 +639,30 @@ export default function ProjectPage() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <label className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-xs text-muted">
+            Provider
+            <select
+              value={project.buildProvider}
+              onChange={(e) =>
+                void handleProviderChange(e.target.value as BuildProviderId)
+              }
+              disabled={isBuilding || savingProvider}
+              className="cursor-pointer bg-transparent text-xs text-foreground outline-none disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Build provider"
+            >
+              {providerOptions.length > 0 ? (
+                providerOptions.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.label}
+                  </option>
+                ))
+              ) : (
+                <option value={project.buildProvider}>
+                  {buildProviderLabel(project.buildProvider)}
+                </option>
+              )}
+            </select>
+          </label>
           <span
             className={`text-xs px-2 py-0.5 rounded ${
               displayStatus === "built"
@@ -719,6 +857,15 @@ export default function ProjectPage() {
           </div>
         )}
       </div>
+
+      <ProviderConnectModal
+        open={providerGate !== null}
+        providerId={providerGate?.providerId ?? null}
+        snapshot={providerGate?.snapshot ?? null}
+        verifying={gateVerifying}
+        onClose={() => setProviderGate(null)}
+        onVerify={() => void verifyProviderGateAndSave()}
+      />
 
       {customEditorModalOpen ? (
         <div
