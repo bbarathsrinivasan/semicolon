@@ -1,9 +1,5 @@
 <div align="center">
-<img
-  src="https://img.shields.io/badge/Semicolon-%3B-7C3AED?style=for-the-badge&labelColor=111827"
-  alt="Semicolon Logo"
-  height="92"
-/>
+<img src="imgs/SemicolonLogo.svg" alt="Semicolon Logo" width="520" />
 
 ![Status](https://img.shields.io/badge/Status-MVP%20Build-22C55E?style=flat-square)
 ![Architecture First](https://img.shields.io/badge/Architecture-First-6366F1?style=flat-square)
