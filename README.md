@@ -89,19 +89,25 @@ Those artifacts drift fast. Semicolon treats architecture as a living model, the
 
 ## Feature Screenshots 🖼️
 
-> Add screenshots under `docs/screenshots/` and update links below.
-
-### 1) Prompt to Diagram
-![Prompt to Diagram](docs/screenshots/prompt-to-diagram.png)
+### 1) Architecture Generation
+![Architecture Generation](imgs/Architecture.png)
+*Starts from a plain-language product idea and turns it into a concrete service graph with dependencies and contracts.*
 
 ### 2) Architecture Editor
-![Architecture Editor](docs/screenshots/architecture-editor.png)
+![Architecture Editor](imgs/ArchitectureEditor.png)
+*Edit services, endpoints, environment variables, and connections so the system model stays accurate before generation.*
 
-### 3) Build Log and Service Status
-![Build Log and Service Status](docs/screenshots/build-log.png)
+### 3) Build and Progress Tracking
+![Build and Progress Tracking](imgs/Build.png)
+*Run builds from the architecture, stream logs in real time, and track service-level status as code is generated.*
 
-### 4) Project Workspace
-![Project Workspace](docs/screenshots/project-workspace.png)
+### 4) Agent/API Configuration
+![Agent/API Configuration](imgs/APIConfig.png)
+*Configure provider credentials and runtime settings so builds can run against the coding agent stack you choose.*
+
+### 5) Deployment View
+![Deployment View](imgs/Deployment.png)
+*Review deployment-oriented output and prepare the generated system for real runtime environments.*
 
 ## Current Capabilities 🚀
 
