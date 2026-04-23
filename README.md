@@ -2,7 +2,7 @@
 <img
   src="https://img.shields.io/badge/Semicolon-%3B-7C3AED?style=for-the-badge&labelColor=111827"
   alt="Semicolon Logo"
-  height="56"
+  height="92"
 />
 
 ![Status](https://img.shields.io/badge/Status-MVP%20Build-22C55E?style=flat-square)
@@ -12,7 +12,15 @@
 
 **Most AI tools help you generate files. Semicolon keeps your system model and code in sync.**
 
-*Describe it once -> get a diagram -> build runnable code from the same source of truth.*
+<p>
+  <kbd>📝 Describe once</kbd>
+  <strong> → </strong>
+  <kbd>🗺️ Visualize architecture</kbd>
+  <strong> → </strong>
+  <kbd>🤖 Build with agents</kbd>
+  <strong> → </strong>
+  <kbd>🔁 Keep diagram and code aligned</kbd>
+</p>
 
 </div>
 
@@ -49,19 +57,16 @@ Those artifacts drift fast. Semicolon treats architecture as a living model, the
 
 ## How Semicolon Works 🗺️
 
-```mermaid
-flowchart LR
-  U[User Prompt] --> C[Clarify + Spec]
-  C --> A[Architecture JSON]
-  A --> D[Interactive Diagram]
-  D --> E[Edit/Refine]
-  E --> B[Build Orchestrator]
-  B --> G[Coding Agent SDK]
-  G --> F[Generated Repo Files]
-  B --> L[Build Log + Status Stream]
-  A --> S[(SQLite Project State)]
-  L --> S
-```
+| Step | Input | Engine | Output |
+|---|---|---|---|
+| 1. Prompt | User idea | Clarify + spec pipeline | Structured project spec |
+| 2. Model | Project spec | Architecture generator | Service graph (nodes + edges) |
+| 3. Refine | Graph + user edits | Diagram editor + AI refine | Updated architecture model |
+| 4. Build | Architecture model | Build orchestrator + coding agent SDK | Runnable repo files |
+| 5. Observe | Build events | SSE log stream + status tracker | Service progress + build logs |
+| 6. Persist | Specs + architecture + logs | SQLite store | Long-lived project memory |
+
+**Flow:** `Prompt -> Spec -> Architecture -> Refine -> Build -> Observe -> Persist`
 
 ## Product Comparison 📊
 
@@ -81,6 +86,22 @@ flowchart LR
 - **Less architecture drift**: one graph is reused for edits and generation.
 - **Faster iteration**: change architecture, then regenerate intentionally.
 - **Observable generation**: streamed events, build logs, and service state tracking.
+
+## Feature Screenshots 🖼️
+
+> Add screenshots under `docs/screenshots/` and update links below.
+
+### 1) Prompt to Diagram
+![Prompt to Diagram](docs/screenshots/prompt-to-diagram.png)
+
+### 2) Architecture Editor
+![Architecture Editor](docs/screenshots/architecture-editor.png)
+
+### 3) Build Log and Service Status
+![Build Log and Service Status](docs/screenshots/build-log.png)
+
+### 4) Project Workspace
+![Project Workspace](docs/screenshots/project-workspace.png)
 
 ## Current Capabilities 🚀
 
@@ -122,7 +143,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Storage**: SQLite via `better-sqlite3`
 - **Output**: local generated repos in `~/semicolon-builds/<projectId>`
 
-## Visual Identity
+## Visual Identity 🎨
 
 - Primary accent: `#7C3AED` (Semicolon purple)
 - Success: `#22C55E`
